@@ -107,7 +107,7 @@ export async function POST(request) {
         order.images.length,
         order.finalAmount || order.totalAmount
       );
-    } catch (emailError) {
+    } catch {
       console.error('Failed to send confirmation email:', emailError);
       // Continue even if email fails
     }
@@ -121,7 +121,7 @@ export async function POST(request) {
         paidAt: order.paidAt
       }
     });
-  } catch (error) {
+  } catch {
     console.error('Payment confirmation error:', error);
     return NextResponse.json(
       { error: 'An error occurred while confirming payment' },

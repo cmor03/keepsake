@@ -60,7 +60,7 @@ export async function GET() {
           })),
       })),
     });
-  } catch (error) {
+  } catch {
     console.error("Error in user API route:", error);
     return NextResponse.json(
       { error: 'An error occurred while fetching user data', message: error.message },

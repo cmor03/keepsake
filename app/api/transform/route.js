@@ -155,7 +155,7 @@ export async function POST(req) {
     } else {
       return NextResponse.json({ error: 'Failed to transform image' }, { status: 500 });
     }
-  } catch (error) {
+  } catch {
     console.error('Transform error:', error);
     return NextResponse.json(
       { error: 'An error occurred during image transformation' },

@@ -35,7 +35,7 @@ export async function ensureOrderHasEmail(req, context, next) {
         status: response.status,
         headers: response.headers
       });
-    } catch (error) {
+    } catch {
       console.error('Error in email middleware:', error);
     }
   }

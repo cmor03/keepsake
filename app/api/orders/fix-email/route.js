@@ -89,7 +89,7 @@ export async function POST(req) {
         customerEmail: order.customerEmail
       }
     });
-  } catch (error) {
+  } catch {
     console.error('Fix email error:', error);
     return NextResponse.json(
       { error: 'An error occurred while updating the order' },

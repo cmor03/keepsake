@@ -48,7 +48,7 @@ export async function POST(req, context) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     console.error("Error completing payment:", error);
     return NextResponse.json(
       { error: "Failed to complete payment" },

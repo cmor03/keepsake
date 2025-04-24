@@ -121,7 +121,7 @@ export async function POST(request) {
         customerEmail: primaryEmail
       }
     });
-  } catch (error) {
+  } catch {
     console.error('Payment intent error:', error);
     return NextResponse.json(
       { error: 'An error occurred while creating payment intent', details: error.message },

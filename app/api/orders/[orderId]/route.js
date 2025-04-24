@@ -83,7 +83,7 @@ export async function GET(req, context) {
         })),
       },
     });
-  } catch (error) {
+  } catch {
     console.error('Order fetch error:', error);
     return NextResponse.json(
       { error: 'An error occurred while fetching the order' },

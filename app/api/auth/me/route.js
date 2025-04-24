@@ -60,7 +60,7 @@ export async function GET() {
         isAdmin: user.isAdmin,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'An error occurred while fetching user data', message: error.message },
       { status: 500 }

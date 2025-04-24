@@ -80,7 +80,7 @@ export async function POST(request) {
     });
     
     return response;
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'An error occurred during force login', message: error.message },
       { status: 500 }

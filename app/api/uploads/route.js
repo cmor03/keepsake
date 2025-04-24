@@ -119,7 +119,7 @@ export async function POST(req) {
         orderImages.length,
         totalAmount
       );
-    } catch (error) {
+    } catch {
       // Continue even if email fails
       console.error('Email sending failed:', error.message);
     }
@@ -135,7 +135,7 @@ export async function POST(req) {
         customerEmail: user.email,
       },
     });
-  } catch (error) {
+  } catch {
     console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'An error occurred during file upload' },

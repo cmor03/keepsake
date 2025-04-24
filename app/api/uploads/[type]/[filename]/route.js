@@ -45,7 +45,7 @@ export async function GET(req, context) {
         'Cache-Control': 'public, max-age=86400',
       },
     });
-  } catch (error) {
+  } catch {
     console.error('Error serving file:', error);
     return NextResponse.json(
       { error: 'An error occurred while serving the file' },

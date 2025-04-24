@@ -118,7 +118,7 @@ export async function POST(req, context) {
         totalAmount: order.totalAmount,
       } 
     });
-  } catch (error) {
+  } catch {
     console.error('Error removing image:', error);
     return NextResponse.json(
       { error: 'Failed to remove image' },

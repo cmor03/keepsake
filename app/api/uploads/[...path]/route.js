@@ -14,7 +14,7 @@ export async function GET(req, { params }) {
     // Ensure the file exists
     try {
       await fs.access(fullPath);
-    } catch (error) {
+    } catch {
       console.error(`File not found: ${fullPath}`, error);
       return new NextResponse("File not found", { status: 404 });
     }
@@ -42,7 +42,7 @@ export async function GET(req, { params }) {
         "Cache-Control": "public, max-age=31536000, immutable"
       }
     });
-  } catch (error) {
+  } catch {
     console.error("Error serving file:", error);
     return new NextResponse("Error serving file", { status: 500 });
   }

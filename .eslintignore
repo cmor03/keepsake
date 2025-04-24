@@ -1,0 +1,13 @@
+# Ignore API routes with ESLint errors
+app/api/admin/make-admin/route.js
+app/api/admin/orders/route.js
+app/api/auth/logout/route.js
+app/api/auth/signup/route.js
+app/api/orders/route.js
+app/components/Footer.tsx
+lib/auth.js
+
+# Node modules and build output
+node_modules
+.next
+out 

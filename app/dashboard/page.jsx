@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +9,7 @@ import LoadingSpinner from '@/app/components/LoadingSpinner';
 import OrderStatusBadge from '@/app/components/OrderStatusBadge';
 import { formatDate } from '@/app/utils/dateUtils';
 
-export default function Dashboard() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightImageId = searchParams.get('highlightImage');
@@ -343,5 +343,17 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 } 

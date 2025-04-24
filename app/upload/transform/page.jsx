@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
@@ -8,7 +8,7 @@ import LoadingSpinner from '@/app/components/LoadingSpinner';
 const POLLING_INTERVAL = 5000; // Check every 5 seconds
 const MAX_POLLS = 36; // Max 3 minutes (36 * 5 seconds)
 
-export default function TransformPage() {
+function TransformPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
@@ -210,5 +210,17 @@ export default function TransformPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TransformPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    }>
+      <TransformPageContent />
+    </Suspense>
   );
 } 

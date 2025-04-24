@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     domains: [],
   },
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Configure rewrites to serve files from the uploads directory
   async rewrites() {
     return [

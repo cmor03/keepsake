@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";
 
-export default function Header() {
+export default async function Header() {
+  const { userId } = await auth();
+
   return (
     <header className="flex items-center justify-between py-6 px-8 sm:px-16">
       <Link href="/" className="flex items-center gap-2">
@@ -24,12 +28,32 @@ export default function Header() {
       </nav>
       
       <div className="flex items-center gap-4">
-        <Link 
-          href="/login"
-          className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm h-10 px-5"
-        >
-          Client Login
-        </Link>
+        {userId ? (
+          <>
+            <Link href="/dashboard" className="text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              Dashboard
+            </Link>
+            <Link href="/place-order" className="text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+              Place Order
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+          </>
+        ) : (
+          <>
+            <Link 
+              href="/login"
+              className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm h-10 px-5"
+            >
+              Login
+            </Link>
+            <Link 
+              href="/signup"
+              className="rounded-full bg-black text-white dark:bg-white dark:text-black px-5 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            >
+              Sign Up
+            </Link>
+          </>
+        )}
         
         <button className="md:hidden">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

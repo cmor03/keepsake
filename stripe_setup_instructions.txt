@@ -1,0 +1,3 @@
+# Stripe Keys - Get from https://dashboard.stripe.com/apikeys
+# Test mode
+STRIPE_SECRET_KEY=sk_test_yourTestKeyHere

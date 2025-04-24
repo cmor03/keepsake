@@ -14,6 +14,12 @@ const UserSchema = new mongoose.Schema(
       type: String,
       minlength: [6, 'Password should be at least 6 characters'],
       select: false,
+      required: false,
+    },
+    clerkId: {
+      type: String,
+      sparse: true,
+      index: true,
     },
     isAdmin: {
       type: Boolean,
@@ -27,18 +33,20 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
+// Hash password before saving (only if password exists)
 UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    next();
+  if (!this.isModified('password') || !this.password) {
+    return next();
   }
   
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Compare password method
 UserSchema.methods.comparePassword = async function(enteredPassword) {
+  if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

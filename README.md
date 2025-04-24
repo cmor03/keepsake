@@ -39,14 +39,24 @@ npm install
 yarn install
 ```
 
-3. Run the development server
+3. Create a `.env.local` file in the root directory with the following:
+   ```
+   # Stripe API keys - replace with your actual keys
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+   STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+
+   # App settings
+   NEXT_PUBLIC_APP_URL=http://localhost:3000
+   ```
+
+4. Run the development server
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) to see the application
+5. Open [http://localhost:3000](http://localhost:3000) to see the application
 
 ## Project Structure
 

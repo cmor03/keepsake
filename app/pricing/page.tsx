@@ -1,13 +1,10 @@
 import React from "react";
 import Link from "next/link";
-import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 export default function PricingPage() {
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      
       <main className="flex-grow">
         {/* Hero Section */}
         <section className="py-20 px-8 sm:px-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-black">
@@ -37,7 +34,7 @@ export default function PricingPage() {
               </div>
               
               <div className="px-8 py-12 sm:px-16">
-                <h3 className="text-xl font-bold mb-8">What's Included</h3>
+                <h3 className="text-xl font-bold mb-8">What&apos;s Included</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-6">
                   <div className="flex">
@@ -96,7 +93,7 @@ export default function PricingPage() {
                     </svg>
                     <div>
                       <h4 className="font-medium">Satisfaction Guaranteed</h4>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Not happy? We'll make it right or refund your payment</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Not happy? We&apos;ll make it right or refund your payment</p>
                     </div>
                   </div>
                 </div>

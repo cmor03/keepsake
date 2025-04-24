@@ -12,7 +12,7 @@ export async function GET() {
     response.cookies.delete('token');
 
     return response;
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'An error occurred during logout' },

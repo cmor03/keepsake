@@ -53,7 +53,7 @@ export async function POST(request) {
         isAdmin: user.isAdmin,
       },
     });
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'An error occurred while making user an admin' },

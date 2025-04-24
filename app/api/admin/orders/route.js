@@ -59,7 +59,7 @@ export async function GET(req) {
         })),
       })),
     });
-  } catch (error) {
+  } catch {
 
     return NextResponse.json(
       { error: 'An error occurred while fetching orders' },

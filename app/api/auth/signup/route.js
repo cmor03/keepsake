@@ -42,8 +42,7 @@ export async function POST(request) {
     // Send welcome email
     try {
       await sendWelcomeEmail(user.email, user.name);
-    } catch (emailError) {
-
+    } catch {
       // Continue even if email fails
     }
     
@@ -55,8 +54,7 @@ export async function POST(request) {
         name: user.name,
       },
     });
-  } catch (error) {
-
+  } catch {
     return NextResponse.json(
       { error: 'An error occurred during signup' },
       { status: 500 }

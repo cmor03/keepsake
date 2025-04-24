@@ -7,7 +7,7 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-semibold mb-4">About Keepsake</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-            Turn every listing into a kids' coloring adventure with our hand-crafted coloring pages.
+            Turn every listing into a kids&apos; coloring adventure with our hand-crafted coloring pages.
           </p>
           <div className="flex gap-4 mt-4">
             <a href="#" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">

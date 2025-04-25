@@ -24,18 +24,6 @@ export default function PaymentForm({ order, email }) {
     setCardError(event.error ? event.error.message : '');
   };
   
-  // Effect to redirect after payment success, only after component is stable
-  useEffect(() => {
-    if (paymentSucceeded && order?.id) {
-      // Short delay to ensure component is stable
-      const redirectTimer = setTimeout(() => {
-        router.push(`/upload/confirmation?orderId=${order.id}`);
-      }, 1000); // Longer delay to ensure stability
-      
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [paymentSucceeded, order?.id, router]);
-  
   // Handle form submission
   const handleSubmit = async (event) => {
     event.preventDefault();

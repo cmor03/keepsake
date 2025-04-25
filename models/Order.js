@@ -21,11 +21,24 @@ const OrderSchema = new mongoose.Schema(
       {
         originalImage: {
           type: String,
+          // required: true, // Filename might become optional if URL is primary
+        },
+        originalImageUrl: { // ADDED: URL for original blob
+          type: String,
           required: true,
         },
         transformedImage: {
           type: String,
           default: null,
+        },
+        transformedImageUrl: { // ADDED: URL for transformed blob
+           type: String,
+           default: null,
+        },
+        status: { // ADDED: Status for individual image processing
+           type: String,
+           enum: ['pending', 'processing', 'completed', 'failed'],
+           default: 'pending',
         },
         name: String,
         dateUploaded: {

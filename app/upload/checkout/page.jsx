@@ -143,11 +143,6 @@ function CheckoutPageContent() {
     };
   }, [orderId]); // Remove createPaymentIntent from dependencies
   
-  // Handle payment success by redirecting to confirmation page
-  const handlePaymentSuccess = () => {
-    router.push(`/upload/confirmation?orderId=${orderId}`);
-  };
-  
   if (loading || processing) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">

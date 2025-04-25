@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '../../components/LoadingSpinner';
+
+// Define image statuses (consider moving to a shared constants file)
+const IMAGE_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+};
 
 function ConfirmationPageContent() {
   const searchParams = useSearchParams();
@@ -14,8 +22,9 @@ function ConfirmationPageContent() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [redirecting, setRedirecting] = useState(false);
-  
+  const pollIntervalRef = useRef(null); // Ref to hold interval ID
+
+  // Initial fetch for order details
   useEffect(() => {
     if (!orderId) {
       setError('No order ID provided');
@@ -34,37 +43,90 @@ function ConfirmationPageContent() {
         
         setOrder(data.order);
         
-        // If there are images in the order, redirect to transform page for the first image
-        if (data.order.images && data.order.images.length > 0) {
-          // Make sure we have a valid image ID
-          const firstImage = data.order.images[0];
-          if (firstImage && firstImage.id) {
-            // Add a small delay to show confirmation before moving to transformation
-            setTimeout(() => {
-              setRedirecting(true);
-              router.push(`/upload/transform?orderId=${orderId}&imageId=${firstImage.id}`);
-            }, 3000);
-          } else if (firstImage && firstImage._id) { 
-            // Try alternative _id format
-            setTimeout(() => {
-              setRedirecting(true);
-              router.push(`/upload/transform?orderId=${orderId}&imageId=${firstImage._id}`);
-            }, 3000);
-          } else {
-            console.error("No valid image ID found:", firstImage);
-            setError("Could not find a valid image to transform");
-          }
-        }
       } catch (err) {
         setError(err.message || 'An error occurred while loading your order details');
       } finally {
-        setLoading(false);
+        // Keep loading true initially, polling effect will set it false
+        // setLoading(false); 
       }
     }
     
     fetchOrderDetails();
-  }, [orderId, router]);
-  
+
+    // Cleanup function for this effect (optional, as polling handles interval clearing)
+    return () => {
+      // Clear interval if component unmounts before polling starts/finishes
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [orderId]); // Only run on orderId change
+
+  // Polling effect for order status updates
+  useEffect(() => {
+    // Don't start polling until the initial order is fetched and contains images
+    if (!order || !order.images || order.images.length === 0) {
+      // If order fetch finished but no images, set loading to false
+      if (!loading && order) { 
+         setLoading(false);
+      }
+      return;
+    }
+
+    // Function to check if all images are done processing
+    const areAllImagesDone = (images) => {
+      return images.every(
+        (img) => img.status === IMAGE_STATUS.COMPLETED || img.status === IMAGE_STATUS.FAILED
+      );
+    };
+
+    // If images are already done, no need to poll
+    if (areAllImagesDone(order.images)) {
+        setLoading(false); // All done, stop loading indicator
+        return;
+    }
+
+    // If initial load finished, but polling hasn't started, set loading false
+    if(loading) setLoading(false); 
+
+    // Start polling
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        console.log(`Polling for order status: ${orderId}`); // Optional: for debugging
+        const response = await fetch(`/api/orders/${orderId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Don't throw error, just log and continue polling maybe? Or stop? Let's stop for now.
+          console.error('Polling error:', data.error || 'Failed to fetch order update');
+          clearInterval(pollIntervalRef.current); // Stop polling on error
+          setError('Failed to get order updates. Please check your dashboard later or contact support.');
+          return;
+        }
+
+        const updatedOrder = data.order;
+        setOrder(updatedOrder); // Update the order state
+
+        // Check if all images are done after update
+        if (updatedOrder.images && areAllImagesDone(updatedOrder.images)) {
+          console.log(`All images processed for order: ${orderId}. Stopping poll.`); // Optional: for debugging
+          clearInterval(pollIntervalRef.current); // Stop polling
+        }
+      } catch (err) {
+        console.error('Polling fetch error:', err);
+        clearInterval(pollIntervalRef.current); // Stop polling on fetch error
+        setError('An error occurred while checking for updates.');
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Cleanup function for the polling effect
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [order, orderId, loading]); // Rerun effect if order data changes or loading state changes
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -151,13 +213,9 @@ function ConfirmationPageContent() {
             </div>
             <div>
               <h2 className="text-xl font-bold">Thank you for your order!</h2>
-              <p className="mt-1">Your payment has been successfully processed. We'll start transforming your image right away.</p>
-              {redirecting && (
-                <p className="mt-2 text-green-600 font-medium">
-                  Redirecting to transformation page...
-                  <span className="inline-block ml-2 animate-pulse">•••</span>
-                </p>
-              )}
+              <p className="mt-1">
+                Your payment was successful. We are processing your images. They will appear below once ready.
+              </p>
             </div>
           </div>
         </div>
@@ -217,22 +275,58 @@ function ConfirmationPageContent() {
         </div>
         
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4">Images Preview</h2>
+          <h2 className="text-xl font-bold mb-4">Your Images</h2>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {order.images.map((image, index) => (
-              <div key={index} className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                {image.originalImage && (
-                  <Image 
-                    src={`/uploads/originals/${image.originalImage}`}
-                    alt={image.name || `Image ${index + 1}`}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+          {(!order.images || order.images.length === 0) ? (
+             <p className="text-gray-500">No images found in this order.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {order.images.map((image, index) => (
+                <div 
+                  key={image._id || image.id || index} // Use a stable ID if available
+                  className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative flex items-center justify-center text-gray-400"
+                >
+                  {/* Conditional Rendering based on image status */}
+                  {(!image.status || image.status === IMAGE_STATUS.PENDING || image.status === IMAGE_STATUS.PROCESSING) && (
+                    <div className="text-center p-2">
+                       <LoadingSpinner size="md" />
+                       <p className="text-xs mt-2">Processing...</p>
+                    </div>
+                  )}
+
+                  {/* Use transformedImageUrl from the model */}
+                  {image.status === IMAGE_STATUS.COMPLETED && image.transformedImageUrl && (
+                    <Image 
+                      // Assuming transformedImageUrl is the public URL from blob storage
+                      src={image.transformedImageUrl} 
+                      alt={image.name || `Processed Image ${index + 1}`}
+                      fill
+                    />
+                  )}
+                  
+                  {image.status === IMAGE_STATUS.FAILED && (
+                     <div className="text-center p-2 text-red-500">
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                       </svg>
+                       <p className="text-xs font-medium">Failed</p>
+                     </div>
+                  )}
+
+                  {/* Fallback/Original - Display if status is missing and no processed image, but original exists */}
+                  {image.status !== IMAGE_STATUS.COMPLETED && image.status !== IMAGE_STATUS.FAILED && image.status !== IMAGE_STATUS.PENDING && image.status !== IMAGE_STATUS.PROCESSING && image.originalImage && (
+                     <Image 
+                       src={`/uploads/originals/${image.originalImage}`} // Assuming original is stored locally
+                       alt={image.name || `Original Image ${index + 1}`}
+                       fill
+                       style={{ objectFit: 'cover', opacity: 0.5 }} // Indicate it's not the final one
+                     />
+                  )}
+
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="mt-8 text-center">

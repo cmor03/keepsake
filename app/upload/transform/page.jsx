@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import withAuth from '../../utils/withAuth';
 
 const POLLING_INTERVAL = 5000; // Check every 5 seconds
 const MAX_POLLS = 36; // Max 3 minutes (36 * 5 seconds)
@@ -20,11 +19,37 @@ function TransformPageContent() {
   const [statusMessage, setStatusMessage] = useState("Initializing transformation...");
   const [transformedImage, setTransformedImage] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const pollCount = useRef(0);
   const intervalId = useRef(null);
 
+  // Authentication check
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        if (!res.ok || !data.success) {
+          router.replace('/sign-up');
+          return;
+        }
+        
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/sign-up');
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
+
+  // Transformation process
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
     // Check for missing parameters
     if (!orderId || !imageId) {
       setError('Missing order or image information. Please try again.');
@@ -133,7 +158,7 @@ function TransformPageContent() {
     return () => {
       clearPolling();
     };
-  }, [orderId, imageId, router]);
+  }, [orderId, imageId, router, isAuthenticated]);
   
   if (error) {
     return (
@@ -150,6 +175,15 @@ function TransformPageContent() {
             Return to Dashboard
           </button>
         </div>
+      </div>
+    );
+  }
+  
+  if (loading && !isComplete) {
+    return (
+      <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex flex-col items-center justify-center">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-gray-600">{statusMessage}</p>
       </div>
     );
   }
@@ -214,7 +248,7 @@ function TransformPageContent() {
   );
 }
 
-function TransformPage() {
+export default function TransformPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex items-center justify-center">
@@ -224,6 +258,4 @@ function TransformPage() {
       <TransformPageContent />
     </Suspense>
   );
-}
-
-export default withAuth(TransformPage); 
+} 

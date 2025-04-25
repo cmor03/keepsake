@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import withAuth from '../../utils/withAuth';
 
 // Define image statuses (consider moving to a shared constants file)
 const IMAGE_STATUS = {
@@ -23,50 +22,70 @@ function ConfirmationPageContent() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const pollIntervalRef = useRef(null); // Ref to hold interval ID
 
-  // Initial fetch for order details
+  // Authentication check
   useEffect(() => {
-    if (!orderId) {
-      setError('No order ID provided');
-      setLoading(false);
-      return;
-    }
-    
-    async function fetchOrderDetails() {
+    async function checkAuth() {
       try {
-        const response = await fetch(`/api/orders/${orderId}`);
-        const data = await response.json();
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
         
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load order details');
+        if (!res.ok || !data.success) {
+          router.replace('/sign-up');
+          return;
         }
         
-        setOrder(data.order);
-        
-      } catch (err) {
-        setError(err.message || 'An error occurred while loading your order details');
-      } finally {
-        // Keep loading true initially, polling effect will set it false
-        // setLoading(false); 
+        setIsAuthenticated(true);
+        fetchOrderDetails();
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/sign-up');
       }
     }
     
-    fetchOrderDetails();
+    checkAuth();
 
-    // Cleanup function for this effect (optional, as polling handles interval clearing)
+    // Cleanup function for this effect
     return () => {
       // Clear interval if component unmounts before polling starts/finishes
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [orderId]); // Only run on orderId change
+  }, [router]);
+
+  // Initial fetch for order details
+  const fetchOrderDetails = async () => {
+    if (!orderId) {
+      setError('No order ID provided');
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/orders/${orderId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load order details');
+      }
+      
+      setOrder(data.order);
+      
+    } catch (err) {
+      setError(err.message || 'An error occurred while loading your order details');
+    } finally {
+      // Keep loading true initially, polling effect will set it false
+      // setLoading(false); 
+    }
+  };
 
   // Polling effect for order status updates
   useEffect(() => {
-    // Don't start polling until the initial order is fetched and contains images
-    if (!order || !order.images || order.images.length === 0) {
+    // Don't start polling until authenticated and initial order is fetched
+    if (!isAuthenticated || !order || !order.images || order.images.length === 0) {
       // If order fetch finished but no images, set loading to false
       if (!loading && order) { 
          setLoading(false);
@@ -126,7 +145,7 @@ function ConfirmationPageContent() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [order, orderId, loading]); // Rerun effect if order data changes or loading state changes
+  }, [order, orderId, loading, isAuthenticated]); // Rerun effect if order data changes or loading/auth state changes
 
   if (loading) {
     return (
@@ -342,7 +361,7 @@ function ConfirmationPageContent() {
   );
 }
 
-function ConfirmationPage() {
+export default function ConfirmationPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -355,6 +374,4 @@ function ConfirmationPage() {
       <ConfirmationPageContent />
     </Suspense>
   );
-}
-
-export default withAuth(ConfirmationPage); 
+} 

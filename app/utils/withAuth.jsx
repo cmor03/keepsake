@@ -15,26 +15,37 @@ export default function withAuth(Component) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
+      let isMounted = true;
+      
       async function checkAuth() {
         try {
           const res = await fetch('/api/auth/me');
           const data = await res.json();
           
+          if (!isMounted) return;
+          
           if (res.ok && data.success) {
             setIsAuthenticated(true);
+            setIsLoading(false);
           } else {
             // Redirect to signup if not authenticated
+            setIsLoading(false);
             router.replace('/sign-up');
           }
         } catch (error) {
+          if (!isMounted) return;
+          
           console.error('Auth check error:', error);
-          router.replace('/sign-up');
-        } finally {
           setIsLoading(false);
+          router.replace('/sign-up');
         }
       }
       
       checkAuth();
+      
+      return () => {
+        isMounted = false;
+      };
     }, [router]);
 
     if (isLoading) {

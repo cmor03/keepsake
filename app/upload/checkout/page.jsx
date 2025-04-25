@@ -7,7 +7,6 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PaymentForm from '../../components/PaymentForm';
 import { useStripe } from '../../components/StripeProvider';
 import { calculatePrice } from '@/lib/utils';
-import withAuth from '../../utils/withAuth';
 
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
@@ -22,6 +21,29 @@ function CheckoutPageContent() {
   
   // Get the Stripe context functions
   const { createPaymentIntent, processing, paymentError } = useStripe();
+  
+  // Authentication check
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        if (!res.ok || !data.success) {
+          router.replace('/sign-up');
+          return;
+        }
+        
+        // If authenticated, continue with order fetching
+        fetchOrderAndInitPayment();
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/sign-up');
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
   
   // Function to fix order email if missing
   const fixOrderEmail = async (orderId) => {
@@ -46,7 +68,7 @@ function CheckoutPageContent() {
     }
   };
   
-  useEffect(() => {
+  const fetchOrderAndInitPayment = async () => {
     if (!orderId) {
       setError('No order ID provided');
       setLoading(false);
@@ -55,94 +77,90 @@ function CheckoutPageContent() {
     
     let isMounted = true;
     
-    async function fetchOrderAndInitPayment() {
-      try {
-        // Fetch order details first
-        const response = await fetch(`/api/orders/${orderId}`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load order details');
-        }
-        
-        // Check if component is still mounted
-        if (!isMounted) return;
-        
-        let orderData = data.order;
-        setOrderImages(orderData.images || []);
-        
-        // If customerEmail is missing, try to fix it
-        if (!orderData.customerEmail) {
-          const fixedEmail = await fixOrderEmail(orderId);
-          if (fixedEmail) {
-            orderData.customerEmail = fixedEmail;
-          } else {
-            throw new Error('Customer email is missing and could not be fixed');
-          }
-        }
-        
-        // Check if component is still mounted
-        if (!isMounted) return;
-        
-        setEmail(orderData.customerEmail);
-        setOrder(orderData);
-        
-        // Make sure we have all required fields for payment
-        if (!orderData.id) {
-          throw new Error('Order ID is missing');
-        }
-        
-        if (!orderData.finalAmount && !orderData.totalAmount) {
-          throw new Error('Order amount is missing');
-        }
-        
-        if (!orderData.customerEmail) {
-          throw new Error('Customer email is missing');
-        }
-        
-        try {
-          // Create payment intent with all required fields
-          const paymentData = await createPaymentIntent({
-            orderId: orderData.id,
-            amount: orderData.finalAmount || orderData.totalAmount,
-            customerEmail: orderData.customerEmail,
-            images: orderData.images || [],
-          });
-          
-          // Check if component is still mounted
-          if (!isMounted) return;
-          
-          // Update the order with payment intent data
-          setOrder(prevOrder => ({
-            ...prevOrder,
-            clientSecret: paymentData.clientSecret,
-            customerId: paymentData.customerId,
-          }));
-        } catch (paymentError) {
-          console.error('Payment intent error:', paymentError);
-          if (isMounted) {
-            setError(paymentError.message || 'Error creating payment intent');
-          }
-        }
-      } catch (err) {
-        console.error('Checkout error:', err);
-        if (isMounted) {
-          setError(err.message || 'An error occurred while setting up checkout');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
+    try {
+      // Fetch order details first
+      const response = await fetch(`/api/orders/${orderId}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load order details');
+      }
+      
+      // Check if component is still mounted
+      if (!isMounted) return;
+      
+      let orderData = data.order;
+      setOrderImages(orderData.images || []);
+      
+      // If customerEmail is missing, try to fix it
+      if (!orderData.customerEmail) {
+        const fixedEmail = await fixOrderEmail(orderId);
+        if (fixedEmail) {
+          orderData.customerEmail = fixedEmail;
+        } else {
+          throw new Error('Customer email is missing and could not be fixed');
         }
       }
+      
+      // Check if component is still mounted
+      if (!isMounted) return;
+      
+      setEmail(orderData.customerEmail);
+      setOrder(orderData);
+      
+      // Make sure we have all required fields for payment
+      if (!orderData.id) {
+        throw new Error('Order ID is missing');
+      }
+      
+      if (!orderData.finalAmount && !orderData.totalAmount) {
+        throw new Error('Order amount is missing');
+      }
+      
+      if (!orderData.customerEmail) {
+        throw new Error('Customer email is missing');
+      }
+      
+      try {
+        // Create payment intent with all required fields
+        const paymentData = await createPaymentIntent({
+          orderId: orderData.id,
+          amount: orderData.finalAmount || orderData.totalAmount,
+          customerEmail: orderData.customerEmail,
+          images: orderData.images || [],
+        });
+        
+        // Check if component is still mounted
+        if (!isMounted) return;
+        
+        // Update the order with payment intent data
+        setOrder(prevOrder => ({
+          ...prevOrder,
+          clientSecret: paymentData.clientSecret,
+          customerId: paymentData.customerId,
+        }));
+      } catch (paymentError) {
+        console.error('Payment intent error:', paymentError);
+        if (isMounted) {
+          setError(paymentError.message || 'Error creating payment intent');
+        }
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      if (isMounted) {
+        setError(err.message || 'An error occurred while setting up checkout');
+      }
+    } finally {
+      if (isMounted) {
+        setLoading(false);
+      }
     }
-    
-    fetchOrderAndInitPayment();
     
     // Cleanup function
     return () => {
       isMounted = false;
     };
-  }, [orderId]); // Remove createPaymentIntent from dependencies
+  };
   
   if (loading || processing) {
     return (
@@ -276,7 +294,7 @@ function CheckoutPageContent() {
   );
 }
 
-function CheckoutPage() {
+export default function CheckoutPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -289,6 +307,4 @@ function CheckoutPage() {
       <CheckoutPageContent />
     </Suspense>
   );
-}
-
-export default withAuth(CheckoutPage); 
+} 

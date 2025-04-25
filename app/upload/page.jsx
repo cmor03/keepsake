@@ -1,21 +1,42 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ImageUploader from '../components/ImageUploader';
 import { calculatePrice } from '@/lib/utils';
 import LoadingSpinner from '../components/LoadingSpinner';
-import withAuth from '../utils/withAuth';
 
-function UploadPage() {
+export default function UploadPage() {
   const router = useRouter();
   const [uploadedOrder, setUploadedOrder] = useState(null);
   const [imageCount, setImageCount] = useState(0);
   const [price, setPrice] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const imageUploaderRef = useRef(null);
+
+  // Check authentication
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        if (!res.ok || !data.success) {
+          router.replace('/sign-up');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.replace('/sign-up');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
 
   // Calculate price per image based on image count
   const getPricePerImage = (count) => {
@@ -44,11 +65,6 @@ function UploadPage() {
     setPrice(orderData.totalAmount || 0);
     setIsUploading(false);
     setError(null); // Clear any existing errors
-    
-    // Don't automatically redirect to checkout anymore
-    // if (orderData?.id) {
-    //   router.push(`/upload/checkout?orderId=${orderData.id}`);
-    // }
   };
 
   const handleProceedToCheckout = async () => {
@@ -79,6 +95,14 @@ function UploadPage() {
   // Calculate current price per image and discount
   const currentPricePerImage = getPricePerImage(imageCount);
   const discountPercentage = getDiscountPercentage(imageCount);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="py-12 px-8 sm:px-16">
@@ -226,6 +250,4 @@ function UploadPage() {
       </div>
     </div>
   );
-}
-
-export default withAuth(UploadPage); 
+} 

@@ -17,77 +17,97 @@ function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const { isLoaded, isSignedIn } = useAuth();
 
-  // Get state from Zustand store individually
+  // Get only necessary state/actions from Zustand store
   const files = useFileStore((state) => state.files);
-  const orderIdFromStore = useFileStore((state) => state.orderId);
-  const clientSecret = useFileStore((state) => state.clientSecret);
-  const totalAmount = useFileStore((state) => state.totalAmount);
   const clearOrder = useFileStore((state) => state.clearOrder);
+
+  // Use local state for payment details fetched via API
+  const [localClientSecret, setLocalClientSecret] = useState(null);
+  const [localTotalAmount, setLocalTotalAmount] = useState(0);
+  const [localImageCount, setLocalImageCount] = useState(0); // For display
 
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [processingState, setProcessingState] = useState('idle'); // idle, paying, uploading, success, error
+  const [processingState, setProcessingState] = useState('idle'); // idle, fetching, paying, uploading, success, error
   const [previewUrls, setPreviewUrls] = useState([]); // State for thumbnail URLs
   
-  // Get orderId from URL, validate against store
+  // Get orderId from URL
   const orderIdFromUrl = searchParams.get('orderId');
 
+  // Effect to fetch payment details based on orderId from URL
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded) return; // Wait for Clerk
+    
     if (!isSignedIn) {
-      // Redirect if not signed in (shouldn't happen if upload page worked)
       router.push('/sign-in?redirect_url=/upload');
       return;
     }
+
     if (!orderIdFromUrl) {
-        setError("Missing order information.");
-        setIsLoading(false);
-        return;
+      setError("Missing order information in URL.");
+      setIsLoading(false);
+      return;
     }
-    if (orderIdFromUrl !== orderIdFromStore) {
-        console.error(`Order ID mismatch: URL (${orderIdFromUrl}) vs Store (${orderIdFromStore})`);
-        setError("Order details mismatch. Please return to the upload page and try again.");
-        // Optionally clear the store here?
-        // clearOrder(); 
-        setIsLoading(false);
-        return;
-    }
-    if (!clientSecret || files.length === 0) {
-        setError("Missing payment details or files. Please return to the upload page.");
-        setIsLoading(false);
-        return;
-    }
+    
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
       setError("Payment system configuration error.");
       setIsLoading(false);
       return;
     }
-    setIsLoading(false);
-  }, [isLoaded, isSignedIn, router, orderIdFromUrl, orderIdFromStore, clientSecret, files]);
 
-  // --- ADDED: Effect to generate/revoke preview URLs --- 
+    const fetchPaymentDetails = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // NEW API CALL
+        const response = await fetch(`/api/orders/${orderIdFromUrl}/payment-details`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch payment details.');
+        }
+        
+        if (!data.clientSecret || data.amount === undefined || data.imageCount === undefined) {
+           throw new Error('Incomplete payment details received.');
+        }
+        
+        console.log("Fetched payment details:", data);
+        setLocalClientSecret(data.clientSecret);
+        setLocalTotalAmount(data.amount);
+        setLocalImageCount(data.imageCount); // Store image count for display
+
+      } catch (err) {
+        console.error("Error fetching payment details:", err);
+        setError(err.message);
+        // Don't clearOrder here, let the user see the error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPaymentDetails();
+
+  }, [isLoaded, isSignedIn, router, orderIdFromUrl]); // Dependency on orderIdFromUrl
+
+  // Effect to generate/revoke preview URLs (no change needed)
   useEffect(() => {
-    // Create URLs when files are available
     if (files && files.length > 0) {
       const urls = files.map(file => ({ name: file.name, url: URL.createObjectURL(file) }));
       setPreviewUrls(urls);
     }
-
-    // Cleanup function to revoke URLs when component unmounts or files change
     return () => {
       setPreviewUrls(currentUrls => {
           currentUrls.forEach(item => URL.revokeObjectURL(item.url));
-          return []; // Return empty array after revoking
+          return [];
       });
     };
-  }, [files]); // Dependency on files from the store
-  // --- END ADDITION ---
+  }, [files]);
 
   const handlePaymentAndUploadSuccess = (finalOrderData) => {
      console.log('CheckoutForm reported success:', finalOrderData);
      setProcessingState('success');
      setError(null);
-     // Clear the Zustand store now that the process is complete
+     // Clear the Zustand store (files primarily) now that the process is complete
      clearOrder(); 
      // Redirect to confirmation page
      router.push(`/upload/confirmation?orderId=${orderIdFromUrl}`);
@@ -96,28 +116,27 @@ function CheckoutPageContent() {
   const handlePaymentError = (errorMessage) => {
       setError(`Payment/Upload Error: ${errorMessage}`);
       setProcessingState('error');
-      // Do NOT clear the order here, user might retry payment/upload
   };
 
+  // --- Render Logic ---
+  
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen"><LoadingSpinner size="lg" /></div>;
+    return <div className="flex items-center justify-center h-screen"><LoadingSpinner size="lg" /><span>&nbsp;Loading checkout details...</span></div>;
   }
 
   if (error) {
-      // Basic error display, maybe add a button to go back?
-      return <div className="p-8 text-center text-red-600">Error: {error}</div>;
+      return <div className="p-8 text-center text-red-600">Error: {error} <button onClick={() => router.push('/upload')} className="ml-2 text-blue-600 underline">Go back</button></div>;
   }
 
-  if (!clientSecret || !orderIdFromStore) {
-      // Should be caught by useEffect, but as a fallback
-       return <div className="p-8 text-center text-red-600">Missing payment information.</div>;
+  // Fallback check if fetching succeeded but data is missing (should be caught by fetch logic)
+  if (!localClientSecret) {
+       return <div className="p-8 text-center text-red-600">Missing payment information. Please try returning to the upload page.</div>;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-100 dark:from-gray-900 dark:to-blue-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-xl mx-auto space-y-8">
         
-        {/* Added a more styled header */}
         <div className="text-center">
              <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight sm:text-5xl">
                Secure Checkout
@@ -127,29 +146,29 @@ function CheckoutPageContent() {
              </p>
         </div>
         
-        {/* Use a glassmorphism-style card for the main content */}
         <div className="bg-white/60 dark:bg-gray-800/60 backdrop-filter backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden">
             <div className="p-6 sm:p-8">
-                {/* Order Summary */}
+                {/* Order Summary - Use local state now */}
                 <div className="mb-8">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 border-b border-gray-300 dark:border-gray-700 pb-2">Order Summary</h3>
                     <dl className="space-y-2 text-sm">
                         <div className="flex justify-between">
                             <dt className="text-gray-600 dark:text-gray-400">Order ID:</dt>
-                            <dd className="font-medium text-gray-800 dark:text-gray-200 font-mono text-xs">{orderIdFromStore}</dd>
+                            <dd className="font-medium text-gray-800 dark:text-gray-200 font-mono text-xs">{orderIdFromUrl}</dd> {/* Use ID from URL */}
                         </div>
                         <div className="flex justify-between">
                             <dt className="text-gray-600 dark:text-gray-400">Images:</dt>
-                            <dd className="font-medium text-gray-800 dark:text-gray-200">{files.length}</dd>
+                            {/* Display count fetched from API, fallback to store length if needed */}
+                            <dd className="font-medium text-gray-800 dark:text-gray-200">{localImageCount || files.length}</dd> 
                         </div>
                         <div className="flex justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
                             <dt className="text-base font-semibold text-gray-900 dark:text-white">Total:</dt>
-                            <dd className="text-base font-semibold text-gray-900 dark:text-white">${totalAmount.toFixed(2)}</dd>
+                            <dd className="text-base font-semibold text-gray-900 dark:text-white">${localTotalAmount.toFixed(2)}</dd> {/* Use amount from local state */}
                         </div>
                     </dl>
                 </div>
 
-                {/* --- ADDED: Thumbnail Preview Section --- */}
+                {/* Thumbnail Preview Section - No change needed */}
                 {previewUrls.length > 0 && (
                   <div className="mb-8">
                       <h4 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Selected Images ({previewUrls.length})</h4>
@@ -166,14 +185,13 @@ function CheckoutPageContent() {
                       </div>
                   </div>
                 )}
-                {/* --- END ADDITION --- */}
 
-                {/* Payment Form */}
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                {/* Payment Form - Use local state */}
+                <Elements stripe={stripePromise} options={{ clientSecret: localClientSecret }}>
                     <CheckoutForm 
-                        orderId={orderIdFromStore}
-                        clientSecret={clientSecret}
-                        price={totalAmount}
+                        orderId={orderIdFromUrl} /* Pass ID from URL */
+                        clientSecret={localClientSecret} /* Pass secret from local state */
+                        price={localTotalAmount} /* Pass amount from local state */
                         onSuccess={handlePaymentAndUploadSuccess}
                         onError={handlePaymentError}
                         onProcessingStateChange={setProcessingState}
@@ -184,10 +202,10 @@ function CheckoutPageContent() {
         
         {/* Display processing state below the card */}
         {processingState === 'paying' && (
-              <p className='mt-4 text-center text-sm text-blue-600 flex items-center justify-center'><LoadingSpinner size="xs" className="mr-2"/> Processing payment...</p>
+              <div className='mt-4 text-center text-sm text-blue-600 flex items-center justify-center'><LoadingSpinner size="xs" className="mr-2"/> Processing payment...</div>
           )}
         {processingState === 'uploading' && (
-            <p className='mt-4 text-center text-sm text-blue-600 flex items-center justify-center'><LoadingSpinner size="xs" className="mr-2"/> Finalizing order and uploading files...</p>
+            <div className='mt-4 text-center text-sm text-blue-600 flex items-center justify-center'><LoadingSpinner size="xs" className="mr-2"/> Finalizing order and uploading files...</div>
         )}
         {processingState === 'success' && (
             <p className='mt-4 text-center text-sm text-green-600'>Order completed successfully! Redirecting...</p>

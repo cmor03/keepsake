@@ -109,8 +109,9 @@ export async function POST(req) {
             description: `Keepsake photo processing order #${order.orderNumber}`,
         });
         
-        // Save paymentIntentId to the order
+        // Save paymentIntentId AND clientSecret to the order
         order.paymentIntentId = paymentIntent.id;
+        order.paymentIntentClientSecret = paymentIntent.client_secret;
         await order.save();
         
     } catch (stripeError) {

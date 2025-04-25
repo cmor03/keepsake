@@ -122,7 +122,7 @@ export default function UploadPage() {
 
       console.log('Order initiated, storing details:', data);
       
-      // Store order details in Zustand store
+      // Store order details in Zustand store BEFORE navigating
       setOrderDetailsInStore({
           orderId: data.orderId,
           clientSecret: data.clientSecret,

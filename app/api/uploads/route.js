@@ -5,15 +5,15 @@ import Order from '../../../models/Order';
 import { generateOrderNumber, calculatePrice } from '../../../lib/utils';
 import { sendOrderConfirmationEmail } from '../../../lib/email';
 import path from 'path';
-import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { put } from '@vercel/blob';
 
-// Configure file upload directory
-const uploadDir = path.join(process.cwd(), 'uploads', 'originals');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Don't try to access the local filesystem in production
+// const uploadDir = path.join(process.cwd(), 'uploads', 'originals');
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir, { recursive: true });
+// }
 
 export async function POST(req) {
   try {
@@ -58,9 +58,7 @@ export async function POST(req) {
       console.log('Created new user in MongoDB:', user._id);
     }
     
-    // Handle multipart form data (simplified for demo)
-    // In production, you'd want to use a proper multipart parser like formidable
-    // But for this demo, we'll use a simplified approach
+    // Handle multipart form data
     const formData = await req.formData();
     const files = formData.getAll('files');
     
@@ -78,19 +76,25 @@ export async function POST(req) {
       
       const fileExtension = path.extname(file.name);
       const fileName = `${uuidv4()}${fileExtension}`;
-      const filePath = path.join(uploadDir, fileName);
       
-      // Save the file
-      const fileArrayBuffer = await file.arrayBuffer();
-      const fileBuffer = Buffer.from(fileArrayBuffer);
-      fs.writeFileSync(filePath, fileBuffer);
-      
-      // Add image to order
-      orderImages.push({
-        originalImage: fileName,
-        name: file.name,
-        dateUploaded: new Date(),
-      });
+      try {
+        // Upload to Vercel Blob Storage instead of local filesystem
+        const blob = await put(`originals/${fileName}`, file, {
+          access: 'public',
+          contentType: file.type,
+        });
+        
+        // Add image to order - store the URL returned from Blob Storage
+        orderImages.push({
+          originalImage: fileName, // Still store just the filename for compatibility
+          name: file.name,
+          originalImageUrl: blob.url, // Store the actual blob URL
+          dateUploaded: new Date(),
+        });
+      } catch (uploadError) {
+        console.error('Error uploading to Blob Storage:', uploadError);
+        // Continue with next file
+      }
     }
     
     if (orderImages.length === 0) {
@@ -119,9 +123,9 @@ export async function POST(req) {
         orderImages.length,
         totalAmount
       );
-    } catch {
+    } catch (emailError) {
       // Continue even if email fails
-      console.error('Email sending failed:', error.message);
+      console.error('Email sending failed:', emailError.message);
     }
     
     return NextResponse.json({
@@ -135,7 +139,7 @@ export async function POST(req) {
         customerEmail: user.email,
       },
     });
-  } catch {
+  } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'An error occurred during file upload' },

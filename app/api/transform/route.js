@@ -126,7 +126,7 @@ export async function POST(req) {
     const response = await openai.images.edit({
       model: "gpt-image-1",
       image: [imageFile],
-      prompt: "Transform this real-life image into a beautiful coloring book style image with clear black outlines and white background, perfect for coloring",
+      prompt: "Transform this real-life image into a beautiful coloring book style image with clear black outlines and white background, perfect for coloring. Pay close attention to the number and position of windows, doors, awnings, and more. ",
     });
     
     // Save the transformed image

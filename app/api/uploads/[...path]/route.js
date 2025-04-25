@@ -1,48 +1,34 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { NextResponse } from "next/server";
+import { list } from "@vercel/blob";
 
 export async function GET(req, { params }) {
   try {
     // Get file path from request params
     const filePath = params.path;
     
-    // Construct the full path to the file
-    const uploadsDir = path.join(process.cwd(), "uploads");
-    const fullPath = path.join(uploadsDir, ...filePath);
+    if (!filePath || filePath.length < 2) {
+      return new NextResponse("Invalid file path", { status: 400 });
+    }
     
-    // Ensure the file exists
-    try {
-      await fs.access(fullPath);
-    } catch {
-      console.error(`File not found: ${fullPath}`, error);
+    // First segment should be the directory (originals or transformed)
+    const directory = filePath[0];
+    // Second segment is the filename
+    const filename = filePath[1];
+    
+    // For compatibility with existing URLs, redirect to the blob URL
+    // First, list blobs to find the matching one
+    const { blobs } = await list({
+      prefix: `${directory}/${filename}`,
+    });
+    
+    if (blobs.length === 0) {
       return new NextResponse("File not found", { status: 404 });
     }
     
-    // Read the file
-    const fileBuffer = await fs.readFile(fullPath);
+    // Redirect to the first matching blob's URL
+    return NextResponse.redirect(blobs[0].url);
     
-    // Determine content type based on file extension
-    const ext = path.extname(fullPath).toLowerCase();
-    const contentTypeMap = {
-      ".jpg": "image/jpeg",
-      ".jpeg": "image/jpeg",
-      ".png": "image/png",
-      ".gif": "image/gif",
-      ".webp": "image/webp",
-      ".pdf": "application/pdf",
-    };
-    
-    const contentType = contentTypeMap[ext] || "application/octet-stream";
-    
-    // Return the file with appropriate headers
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    });
-  } catch {
+  } catch (error) {
     console.error("Error serving file:", error);
     return new NextResponse("Error serving file", { status: 500 });
   }

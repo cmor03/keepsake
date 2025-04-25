@@ -74,7 +74,12 @@ export default function HowItWorksPage() {
             <div>
               <div className="relative w-full aspect-[4/3] max-w-xl mx-auto">
                 <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-2xl flex items-center justify-center text-gray-400">
-                  Payment Process Image
+                <Image
+                    src="/checkout.png"
+                    alt="Upload interface showing drag and drop area"
+                    fill
+                    className="object-cover rounded-2xl shadow-lg" 
+                  />
                 </div>
               </div>
             </div>

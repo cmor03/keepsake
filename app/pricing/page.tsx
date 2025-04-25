@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import Footer from "../components/Footer";
 
 export default function PricingPage() {
   return (
@@ -194,8 +193,6 @@ export default function PricingPage() {
           </div>
         </section>
       </main>
-      
-      <Footer />
     </div>
   );
 } 

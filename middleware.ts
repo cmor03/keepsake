@@ -1,4 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { NextFetchEvent } from 'next/server';
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -18,26 +21,54 @@ const isPublicRoute = createRouteMatcher([
   '/pricing(.*)',        // Pricing
   '/how-it-works(.*)',   // Marketing pages
   '/contact(.*)',        // Contact page
+  '/(.*)\\.png',         // Allow PNG files
+  '/(.*)\\.jpg',         // Allow JPG files
+  '/(.*)\\.jpeg',        // Allow JPEG files
+  '/(.*)\\.webp',        // Allow WEBP files
+  '/(.*)\\.gif',         // Allow GIF files
 ]);
 
-// Only require authentication for non-public routes
-export default clerkMiddleware((auth, req) => {
-  // For debugging in development
-  console.log(`Path: ${new URL(req.url).pathname}, Public: ${isPublicRoute(req)}`);
+// Middleware handler
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  const url = new URL(req.url);
+  const path = url.pathname;
   
-  if (!isPublicRoute(req)) {
-    // Protect all non-public routes
-    auth.protect();
+  // For debugging in development
+  console.log(`Path: ${path}, Processing in middleware`);
+  
+  // Completely bypass Clerk for upload-related paths and static files
+  if (
+    path.startsWith('/api/uploads') || 
+    path.startsWith('/api/upload') || 
+    path.startsWith('/api/images') ||
+    path.includes('/_next/') || 
+    path.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/)
+  ) {
+    console.log(`Bypassing Clerk for: ${path}`);
+    return NextResponse.next();
   }
-}, {
-  authorizedParties: ['https://keepsake.app', 'https://*.keepsake.app'],
-});
+  
+  // For all other paths, use Clerk middleware
+  const handler = clerkMiddleware((auth, reqInner) => {
+    const isPublic = isPublicRoute(reqInner);
+    console.log(`Path: ${path}, Public: ${isPublic}`);
+    
+    if (!isPublic) {
+      // Protect all non-public routes
+      auth.protect();
+    }
+  }, {
+    authorizedParties: ['https://keepsake.app', 'https://*.keepsake.app'],
+  });
+  
+  return handler(req, event);
+}
 
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files
     '/((?!_next/static|_next/image|favicon.ico).*)',
-    // Always run for API routes
+    // Include API routes
     '/(api|trpc)(.*)',
   ],
 }; 

@@ -9,8 +9,8 @@ export default function ClientHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   return (
-    <header className="relative">
-      <div className="flex items-center justify-between py-3 px-4 sm:py-4 sm:px-8 border-b border-gray-200/50 dark:border-gray-800/50 glass-nav">
+    <header className="relative py-3 sm:py-4 border-b border-gray-200/50 dark:border-gray-800/50 glass-nav">
+      <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-8 w-full">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative w-7 h-7 sm:w-8 sm:h-8">
             <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-[var(--primary)]">

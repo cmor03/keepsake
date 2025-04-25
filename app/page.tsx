@@ -339,6 +339,19 @@ export default function Home() {
               Hear from real estate professionals who have used our service.
             </p>
           </div>
+
+          {/* ADD: Fridge Image before testimonials */}
+          <div className="mb-12 flex justify-center">
+            <div className="relative w-full max-w-sm aspect-[3/4] rounded-lg overflow-hidden shadow-lg">
+              <Image 
+                src="/fridge.png"
+                alt="Kid happily pointing to a finished coloring page on a fridge"
+                fill
+                sizes="(max-width: 640px) 80vw, 400px"
+                className="object-cover"
+              />
+            </div>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="glass-card p-8">

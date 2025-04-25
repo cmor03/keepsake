@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@clerk/nextjs';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import PaymentForm from '../../components/PaymentForm';
 import { useStripe } from '../../components/StripeProvider';
@@ -11,6 +12,7 @@ import { calculatePrice } from '@/lib/utils';
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
   const orderId = searchParams.get('orderId');
   
   const [email, setEmail] = useState('');
@@ -22,28 +24,18 @@ function CheckoutPageContent() {
   // Get the Stripe context functions
   const { createPaymentIntent, processing, paymentError } = useStripe();
   
-  // Authentication check
+  // Authentication check using Clerk
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (!res.ok || !data.success) {
-          router.replace('/sign-up');
-          return;
-        }
-        
-        // If authenticated, continue with order fetching
-        fetchOrderAndInitPayment();
-      } catch (error) {
-        console.error('Auth check error:', error);
-        router.replace('/sign-up');
-      }
+    if (!isLoaded) return;
+    
+    if (!isSignedIn) {
+      router.replace('/sign-in');
+      return;
     }
     
-    checkAuth();
-  }, [router]);
+    // If authenticated, continue with order fetching
+    fetchOrderAndInitPayment();
+  }, [isLoaded, isSignedIn, router]);
   
   // Function to fix order email if missing
   const fixOrderEmail = async (orderId) => {

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@clerk/nextjs';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
 // Define image statuses (consider moving to a shared constants file)
@@ -17,44 +18,33 @@ const IMAGE_STATUS = {
 function ConfirmationPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
   const orderId = searchParams.get('orderId');
   
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const pollIntervalRef = useRef(null); // Ref to hold interval ID
 
-  // Authentication check
+  // Authentication check using Clerk
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (!res.ok || !data.success) {
-          router.replace('/sign-up');
-          return;
-        }
-        
-        setIsAuthenticated(true);
-        fetchOrderDetails();
-      } catch (error) {
-        console.error('Auth check error:', error);
-        router.replace('/sign-up');
-      }
+    if (!isLoaded) return;
+    
+    if (!isSignedIn) {
+      router.replace('/sign-in');
+      return;
     }
     
-    checkAuth();
-
-    // Cleanup function for this effect
+    // Proceed with fetching order details
+    fetchOrderDetails();
+    
+    // Cleanup function
     return () => {
-      // Clear interval if component unmounts before polling starts/finishes
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [router]);
+  }, [isLoaded, isSignedIn, router]);
 
   // Initial fetch for order details
   const fetchOrderDetails = async () => {
@@ -85,7 +75,7 @@ function ConfirmationPageContent() {
   // Polling effect for order status updates
   useEffect(() => {
     // Don't start polling until authenticated and initial order is fetched
-    if (!isAuthenticated || !order || !order.images || order.images.length === 0) {
+    if (!isSignedIn || !order || !order.images || order.images.length === 0) {
       // If order fetch finished but no images, set loading to false
       if (!loading && order) { 
          setLoading(false);
@@ -145,7 +135,7 @@ function ConfirmationPageContent() {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [order, orderId, loading, isAuthenticated]); // Rerun effect if order data changes or loading/auth state changes
+  }, [order, orderId, loading, isSignedIn]); // Rerun effect if order data changes or loading/auth state changes
 
   if (loading) {
     return (

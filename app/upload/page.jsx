@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@clerk/nextjs';
 import ImageUploader from '../components/ImageUploader';
 import { calculatePrice } from '@/lib/utils';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function UploadPage() {
   const router = useRouter();
+  const { isLoaded, userId, isSignedIn } = useAuth();
   const [uploadedOrder, setUploadedOrder] = useState(null);
   const [imageCount, setImageCount] = useState(0);
   const [price, setPrice] = useState(0);
@@ -17,26 +19,16 @@ export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(true);
   const imageUploaderRef = useRef(null);
 
-  // Check authentication
+  // Check authentication using Clerk
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (!res.ok || !data.success) {
-          router.replace('/sign-up');
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        router.replace('/sign-up');
-      } finally {
-        setIsLoading(false);
-      }
-    }
+    if (!isLoaded) return;
     
-    checkAuth();
-  }, [router]);
+    if (!isSignedIn) {
+      router.replace('/sign-in');
+    } else {
+      setIsLoading(false);
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   // Calculate price per image based on image count
   const getPricePerImage = (count) => {

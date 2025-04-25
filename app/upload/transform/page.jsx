@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@clerk/nextjs';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 const POLLING_INTERVAL = 5000; // Check every 5 seconds
@@ -11,6 +12,7 @@ const MAX_POLLS = 36; // Max 3 minutes (36 * 5 seconds)
 function TransformPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { isLoaded, isSignedIn } = useAuth();
   const orderId = searchParams.get('orderId');
   const imageId = searchParams.get('imageId');
   
@@ -19,36 +21,18 @@ function TransformPageContent() {
   const [statusMessage, setStatusMessage] = useState("Initializing transformation...");
   const [transformedImage, setTransformedImage] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   const pollCount = useRef(0);
   const intervalId = useRef(null);
 
-  // Authentication check
+  // Authentication check using Clerk
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (!res.ok || !data.success) {
-          router.replace('/sign-up');
-          return;
-        }
-        
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth check error:', error);
-        router.replace('/sign-up');
-      }
-    }
+    if (!isLoaded) return;
     
-    checkAuth();
-  }, [router]);
-
-  // Transformation process
-  useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isSignedIn) {
+      router.replace('/sign-in');
+      return;
+    }
     
     // Check for missing parameters
     if (!orderId || !imageId) {
@@ -152,13 +136,14 @@ function TransformPageContent() {
       }
     };
 
+    // Continue with transformation process
     initiateTransform();
 
     // Cleanup function
     return () => {
       clearPolling();
     };
-  }, [orderId, imageId, router, isAuthenticated]);
+  }, [isLoaded, isSignedIn, router, orderId, imageId]);
   
   if (error) {
     return (

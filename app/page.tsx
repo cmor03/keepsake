@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { MouseEvent } from 'react';
+import { useAuth } from '@clerk/nextjs';
 
 // Refined Carousel component
 const BeforeAfterCarousel = () => {
@@ -190,35 +191,15 @@ const BeforeAfterCarousel = () => {
 };
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
   
-  useEffect(() => {
-    // Check if user is logged in
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (res.ok && data.success) {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-      }
-    }
-    
-    checkAuth();
-  }, []);
-
   // Handle click on Create button based on auth state
   const handleCreateClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (!isLoggedIn) {
+    if (isLoaded && !isSignedIn) {
       e.preventDefault();
-      window.location.href = '/sign-up';
+      window.location.href = '/sign-in';
     }
-    // If logged in, the Link component will handle navigation to /upload
+    // If signed in, let the normal Link navigation happen
   };
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CardElement, useStripe as useStripeElement, useElements } from '@stripe/react-stripe-js';
 import { useStripe } from './StripeProvider';
+import LoadingSpinner from './LoadingSpinner';
 
 export default function PaymentForm({ order, email }) {
   const router = useRouter();
@@ -84,8 +85,11 @@ export default function PaymentForm({ order, email }) {
       // If payment successful, update the order status
       await updateOrderAfterPayment(order.id, paymentIntent.id);
       
-      // Mark payment as successful but don't navigate immediately
+      // Mark payment as successful (briefly shows success message before redirect)
       setPaymentSucceeded(true);
+
+      // Redirect to confirmation page immediately after success
+      router.push(`/upload/confirmation?orderId=${order.id}`);
       
     } catch (error) {
       console.error('Payment error:', error);
@@ -107,7 +111,7 @@ export default function PaymentForm({ order, email }) {
         </svg>
         <h3 className="text-lg font-medium text-green-800 mb-2">Payment Successful!</h3>
         <p className="text-green-700 mb-4">Your payment has been processed successfully.</p>
-        <p className="text-sm text-green-600">Redirecting to confirmation page...</p>
+        <LoadingSpinner size="sm" />
       </div>
     );
   }

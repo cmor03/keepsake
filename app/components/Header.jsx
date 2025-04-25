@@ -100,7 +100,7 @@ export default function Header() {
                   href="/upload" 
                   className="ml-4 px-3 py-2 rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                 >
-                  Upload Images
+                  Create
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -219,7 +219,7 @@ export default function Header() {
                 href="/upload" 
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
               >
-                Upload Images
+                Create
               </Link>
               <button
                 onClick={handleLogout}

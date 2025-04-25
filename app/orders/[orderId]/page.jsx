@@ -137,10 +137,10 @@ export default function OrderDetailPage() {
                     
                     <div>
                       <p className="text-sm font-medium mb-2">Transformed</p>
-                      {image.transformedImage ? (
+                      {image.transformedImageUrl ? (
                         <div className="relative h-40 bg-gray-100 rounded">
                           <Image
-                            src={`/api/uploads/transformed/${image.transformedImage}`}
+                            src={image.transformedImageUrl}
                             alt={`Transformed ${image.name}`}
                             fill
                             className="object-contain"

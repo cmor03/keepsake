@@ -17,7 +17,11 @@ const triggerTransform = async (orderId, imageId) => {
          'Content-Type': 'application/json',
          // TODO: Add authentication if needed for internal API calls
        },
-       body: JSON.stringify({ orderId, imageId }),
+       body: JSON.stringify({ 
+         orderId, 
+         imageId,
+         isSystemCall: true  // Flag to bypass user auth check
+       }),
      });
   } catch (error) {
      console.error(`Failed to trigger transform for image ${imageId}:`, error);
@@ -28,7 +32,7 @@ const triggerTransform = async (orderId, imageId) => {
 export async function POST(req, context) {
   try {
     await dbConnect();
-    const { orderId } = context.params; // Await is not needed here for context.params
+    const { orderId } = await Promise.resolve(context.params);
     const { paymentIntentId } = await req.json();
 
     if (!paymentIntentId) {

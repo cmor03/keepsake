@@ -35,7 +35,7 @@ export default function ClientHeader() {
               Dashboard
             </Link>
             <Link href="/upload" className="text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] transition-colors">
-              Upload Images
+              Create
             </Link>
             <UserButton afterSignOutUrl="/" />
           </>

@@ -15,6 +15,7 @@ export default function AdminOrderDetailPage() {
   const [error, setError] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(null);
+  const [bulkTransforming, setBulkTransforming] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -103,6 +104,40 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleBulkTransform = async () => {
+    try {
+      setBulkTransforming(true);
+      setError(null);
+      
+      const response = await fetch(`/api/admin/orders/${orderId}/bulk-transform`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Can add filterStatus if needed
+      });
+      
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate bulk transformation');
+      }
+
+      // Show success message
+      alert(`Success! Initiated transformation for ${data.transformCount} images. Skipped ${data.skippedCount} images.`);
+      
+      // Refresh after a delay to allow transformations to start
+      setTimeout(() => {
+        fetchOrder();
+      }, 2000);
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBulkTransforming(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -182,13 +217,28 @@ export default function AdminOrderDetailPage() {
               </p>
             </div>
             
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 flex flex-col items-end">
               <p className="text-gray-600">
                 <span className="font-medium">Customer:</span> {order.user?.name || order.user?.email || 'Unknown User'}
               </p>
               <p className="text-gray-600">
                 <span className="font-medium">Total:</span> ${order.totalAmount?.toFixed(2)}
               </p>
+              
+              <button
+                onClick={handleBulkTransform}
+                disabled={bulkTransforming}
+                className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300 flex items-center"
+              >
+                {bulkTransforming ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  <>Auto-Transform All Images</>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -255,10 +305,10 @@ export default function AdminOrderDetailPage() {
                     
                     <div>
                       <p className="text-sm font-medium mb-2">Transformed</p>
-                      {image.transformedImage ? (
+                      {image.transformedImageUrl ? (
                         <div className="relative h-64 bg-gray-100 rounded">
                           <Image
-                            src={`/api/uploads/transformed/${image.transformedImage}`}
+                            src={image.transformedImageUrl}
                             alt={`Transformed ${image.name}`}
                             fill
                             className="object-contain"

@@ -40,15 +40,15 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
       setError('Some files were rejected. Please only upload images under 20MB.');
     }
 
-    // Automatically start uploading once files are added
-    if (validFiles.length > 0) {
+    // Show thumbnails first, don't immediately upload unless hideUploadButton is true
+    if (validFiles.length > 0 && hideUploadButton) {
       // Pass the files directly instead of relying on state update
       uploadImages(filesWithPreviews).catch(err => {
         console.error('Upload failed:', err);
         setError(err.message || 'Failed to upload images');
       });
     }
-  }, []);
+  }, [hideUploadButton]);
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -231,47 +231,7 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
         </div>
       )}
       
-      {/* Display uploaded files */}
-      {uploadedFiles.length > 0 && (
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">Uploaded Images ({uploadedFiles.length})</h3>
-          </div>
-          
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-            {uploadedFiles.map((image, index) => (
-              <div key={index} className="relative group">
-                <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                  {/* Use originalImageUrl if available, else fallback to preview (local blob URL) */}
-                  {image.originalImageUrl || image.preview ? (
-                    <Image
-                      src={image.originalImageUrl || image.preview}
-                      alt={`Preview ${image.file.name}`}
-                      fill
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2v12h8V4H6zm8 12h2a2 2 0 002-2v-2h-2v2zM6 14H4v2a2 2 0 01-2-2v-2h2v2zm10-10V4a2 2 0 00-2-2h-2v2h2v2zM4 6H2a2 2 0 00-2 2v2h2V6z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <button 
-                  onClick={() => removeUploadedFile(image.id)}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Files to be uploaded */}
+      {/* Files to be uploaded - Show this section first for better UX */}
       {files.length > 0 && (
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
@@ -295,6 +255,8 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
                     src={file.preview} 
                     alt={file.name}
                     fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
                   />
                 </div>
                 {!uploading && (
@@ -341,6 +303,48 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
               Upload {files.length} {files.length === 1 ? 'Image' : 'Images'}
             </button>
           )}
+        </div>
+      )}
+      
+      {/* Display uploaded files */}
+      {uploadedFiles.length > 0 && (
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium">Uploaded Images ({uploadedFiles.length})</h3>
+          </div>
+          
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+            {uploadedFiles.map((image, index) => (
+              <div key={index} className="relative group">
+                <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  {/* Use originalImageUrl if available, else fallback to preview (local blob URL) */}
+                  {image.originalImageUrl || image.preview ? (
+                    <Image
+                      src={image.originalImageUrl || image.preview}
+                      alt={`Preview ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2v12h8V4H6zm8 12h2a2 2 0 002-2v-2h-2v2zM6 14H4v2a2 2 0 01-2-2v-2h2v2zm10-10V4a2 2 0 00-2-2h-2v2h2v2zM4 6H2a2 2 0 00-2 2v2h2V6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <button 
+                  onClick={() => removeUploadedFile(image.id)}
+                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

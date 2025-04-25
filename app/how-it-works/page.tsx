@@ -53,7 +53,7 @@ export default function HowItWorksPage() {
                 href="/upload"
                 className="rounded-full bg-black text-white dark:bg-white dark:text-black px-6 py-3 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors inline-block"
               >
-                Upload Images
+                Create
               </Link>
             </div>
             <div className="order-1 md:order-2">

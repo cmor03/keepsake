@@ -205,7 +205,7 @@ export default function Home() {
               href="/upload"
               className="etsy-button-primary px-8 py-4 text-lg font-medium"
             >
-              Upload Images
+              Create
             </Link>
           </div>
           <div className="flex-1">

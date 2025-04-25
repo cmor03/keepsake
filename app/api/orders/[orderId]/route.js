@@ -76,8 +76,11 @@ export async function GET(req, context) {
         images: order.images.map(img => ({
           id: img._id,
           originalImage: img.originalImage,
+          originalImageUrl: img.originalImageUrl,
           transformedImage: img.transformedImage,
+          transformedImageUrl: img.transformedImageUrl,
           name: img.name,
+          status: img.status,
           dateUploaded: img.dateUploaded,
           dateTransformed: img.dateTransformed,
         })),

@@ -48,14 +48,17 @@ export async function GET(req) {
         imageCount: order.images.length,
         totalAmount: order.totalAmount,
         images: order.images
-          .filter(img => img.transformedImage) // Only include transformed images
+          .filter(img => img.transformedImage || img.transformedImageUrl) // Include images with either transformedImage or transformedImageUrl
           .map(img => ({
             id: img._id,
             originalImage: img.originalImage,
+            originalImageUrl: img.originalImageUrl,
             transformedImage: img.transformedImage,
+            transformedImageUrl: img.transformedImageUrl,
             name: img.name,
             dateUploaded: img.dateUploaded,
             dateTransformed: img.dateTransformed,
+            status: img.status
           })),
       })),
     });

@@ -73,10 +73,13 @@ export async function GET(req, context) {
         images: order.images.map(img => ({
           id: img._id,
           originalImage: img.originalImage,
+          originalImageUrl: img.originalImageUrl,
           transformedImage: img.transformedImage,
+          transformedImageUrl: img.transformedImageUrl,
           name: img.name,
           dateUploaded: img.dateUploaded,
           dateTransformed: img.dateTransformed,
+          status: img.status
         })),
       },
     });
@@ -186,9 +189,15 @@ export async function POST(req, context) {
     const fileBuffer = Buffer.from(fileArrayBuffer);
     fs.writeFileSync(filePath, fileBuffer);
     
+    // Set up URL for the image
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const imageUrl = `${baseUrl}/api/uploads/transformed/${fileName}`;
+    
     // Update the image in the order
     order.images[imageIndex].transformedImage = fileName;
+    order.images[imageIndex].transformedImageUrl = imageUrl;
     order.images[imageIndex].dateTransformed = new Date();
+    order.images[imageIndex].status = 'completed';
     await order.save();
     
     // Check if all images in the order have been transformed
@@ -205,7 +214,9 @@ export async function POST(req, context) {
       image: {
         id: order.images[imageIndex]._id,
         originalImage: order.images[imageIndex].originalImage,
+        originalImageUrl: order.images[imageIndex].originalImageUrl,
         transformedImage: order.images[imageIndex].transformedImage,
+        transformedImageUrl: order.images[imageIndex].transformedImageUrl,
         dateTransformed: order.images[imageIndex].dateTransformed,
       },
     });

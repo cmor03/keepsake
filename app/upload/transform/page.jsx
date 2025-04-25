@@ -62,9 +62,9 @@ function TransformPageContent() {
         const order = data.order;
         const targetImage = order?.images?.find(img => img.id === imageId);
         
-        if (targetImage?.transformedImage) {
-          console.log("Transformation complete! Image found:", targetImage.transformedImage);
-          setTransformedImage(targetImage.transformedImage);
+        if (targetImage?.transformedImageUrl) {
+          console.log("Transformation complete! Image found:", targetImage.transformedImageUrl);
+          setTransformedImage(targetImage.transformedImageUrl);
           setStatusMessage("Transformation Complete!");
           setIsComplete(true);
           clearPolling();
@@ -102,9 +102,9 @@ function TransformPageContent() {
         }
 
         // If already transformed, handle completion immediately
-        if (data.image?.transformedImage) {
-           console.log("Image was already transformed:", data.image.transformedImage);
-           setTransformedImage(data.image.transformedImage);
+        if (data.image?.transformedImageUrl) {
+           console.log("Image was already transformed:", data.image.transformedImageUrl);
+           setTransformedImage(data.image.transformedImageUrl);
            setStatusMessage("Transformation Complete!");
            setIsComplete(true);
            setLoading(false); 
@@ -200,7 +200,7 @@ function TransformPageContent() {
             <h2 className="text-lg font-medium mb-4">Preview</h2>
             <div className="relative pt-[100%] bg-gray-50 rounded-lg overflow-hidden">
               <Image
-                src={`/api/uploads/transformed/${transformedImage}`}
+                src={transformedImage}
                 alt="Transformed image"
                 fill
                 className="object-contain p-2 animate-fade-in"

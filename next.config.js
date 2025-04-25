@@ -2,7 +2,11 @@
 const nextConfig = {
   // Handle image domains for remote images if needed
   images: {
-    domains: [],
+    domains: [
+      'public.blob.vercel-storage.com',
+      'urs4msfgsmzpjesw.public.blob.vercel-storage.com',
+      'urs4msfgsmzpjesw.blob.vercel-storage.com'
+    ],
   },
   // Disable ESLint during build
   eslint: {

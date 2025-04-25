@@ -52,10 +52,13 @@ export async function GET(req) {
         images: order.images.map(img => ({
           id: img._id,
           originalImage: img.originalImage,
+          originalImageUrl: img.originalImageUrl,
           transformedImage: img.transformedImage,
+          transformedImageUrl: img.transformedImageUrl,
           name: img.name,
           dateUploaded: img.dateUploaded,
           dateTransformed: img.dateTransformed,
+          status: img.status
         })),
       })),
     });

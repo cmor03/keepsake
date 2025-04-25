@@ -43,6 +43,8 @@ export default function middleware(req: NextRequest, event: NextFetchEvent) {
     authorizedParties: [
       'https://keepsake.app', 
       'https://*.keepsake.app',
+      'https://www.keepsake.ink',
+      'https://*.keepsake.ink',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:*'

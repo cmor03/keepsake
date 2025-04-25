@@ -112,13 +112,30 @@ function DashboardContent() {
     fetchData();
   }, [router, highlightImageId, isLoaded, isSignedIn, userId, clerkUser]);
 
-  const handleDownload = (imageUrl, imageName) => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = imageName || 'keepsake-coloring-page.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (imageUrl, imageName) => {
+    try {
+      // Fetch the image data
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
+      // Get the blob data from the response
+      const blob = await response.blob();
+      
+      // Create a local blob URL and force download
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = imageName || 'keepsake-coloring-page.png';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up by removing the link and revoking the blob URL
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download image. Please try again.');
+    }
   };
 
   // Wait for Clerk to initialize

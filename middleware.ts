@@ -29,6 +29,8 @@ export default clerkMiddleware((auth, req) => {
     // Protect all non-public routes
     auth.protect();
   }
+}, {
+  authorizedParties: ['https://keepsake.app', 'https://*.keepsake.app'],
 });
 
 export const config = {

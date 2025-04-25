@@ -7,6 +7,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import PaymentForm from '../../components/PaymentForm';
 import { useStripe } from '../../components/StripeProvider';
 import { calculatePrice } from '@/lib/utils';
+import withAuth from '../../utils/withAuth';
 
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
@@ -275,7 +276,7 @@ function CheckoutPageContent() {
   );
 }
 
-export default function CheckoutPage() {
+function CheckoutPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -288,4 +289,6 @@ export default function CheckoutPage() {
       <CheckoutPageContent />
     </Suspense>
   );
-} 
+}
+
+export default withAuth(CheckoutPage); 

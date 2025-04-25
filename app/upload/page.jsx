@@ -6,8 +6,9 @@ import Link from 'next/link';
 import ImageUploader from '../components/ImageUploader';
 import { calculatePrice } from '@/lib/utils';
 import LoadingSpinner from '../components/LoadingSpinner';
+import withAuth from '../utils/withAuth';
 
-export default function UploadPage() {
+function UploadPage() {
   const router = useRouter();
   const [uploadedOrder, setUploadedOrder] = useState(null);
   const [imageCount, setImageCount] = useState(0);
@@ -225,4 +226,6 @@ export default function UploadPage() {
       </div>
     </div>
   );
-} 
+}
+
+export default withAuth(UploadPage); 

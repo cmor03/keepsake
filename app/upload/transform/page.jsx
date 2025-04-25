@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import withAuth from '../../utils/withAuth';
 
 const POLLING_INTERVAL = 5000; // Check every 5 seconds
 const MAX_POLLS = 36; // Max 3 minutes (36 * 5 seconds)
@@ -213,7 +214,7 @@ function TransformPageContent() {
   );
 }
 
-export default function TransformPage() {
+function TransformPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex items-center justify-center">
@@ -223,4 +224,6 @@ export default function TransformPage() {
       <TransformPageContent />
     </Suspense>
   );
-} 
+}
+
+export default withAuth(TransformPage); 

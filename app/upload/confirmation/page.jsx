@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import withAuth from '../../utils/withAuth';
 
 // Define image statuses (consider moving to a shared constants file)
 const IMAGE_STATUS = {
@@ -341,7 +342,7 @@ function ConfirmationPageContent() {
   );
 }
 
-export default function ConfirmationPage() {
+function ConfirmationPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
@@ -354,4 +355,6 @@ export default function ConfirmationPage() {
       <ConfirmationPageContent />
     </Suspense>
   );
-} 
+}
+
+export default withAuth(ConfirmationPage); 

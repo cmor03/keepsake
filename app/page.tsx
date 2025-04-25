@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { MouseEvent } from 'react';
 
 // Refined Carousel component
 const BeforeAfterCarousel = () => {
@@ -189,6 +190,37 @@ const BeforeAfterCarousel = () => {
 };
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  useEffect(() => {
+    // Check if user is logged in
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        if (res.ok && data.success) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        setIsLoggedIn(false);
+      }
+    }
+    
+    checkAuth();
+  }, []);
+
+  // Handle click on Create button based on auth state
+  const handleCreateClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!isLoggedIn) {
+      e.preventDefault();
+      window.location.href = '/sign-up';
+    }
+    // If logged in, the Link component will handle navigation to /upload
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -204,6 +236,7 @@ export default function Home() {
             <Link 
               href="/upload"
               className="etsy-button-primary px-8 py-4 text-lg font-medium"
+              onClick={handleCreateClick}
             >
               Create
             </Link>
@@ -405,6 +438,7 @@ export default function Home() {
             <Link 
               href="/upload"
               className="bg-white text-[var(--primary)] rounded-full px-8 py-4 text-lg font-medium hover:bg-gray-100 transition-colors"
+              onClick={handleCreateClick}
             >
               Get Started Now
             </Link>

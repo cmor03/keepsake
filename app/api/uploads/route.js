@@ -137,7 +137,7 @@ export async function POST(req) {
       orderNumber,
       images: orderImages,
       totalAmount,
-      status: 'pending',
+      status: 'awaiting_payment',
       customerEmail: user.email,
       user: user._id, // Always associate with authenticated user
     };
@@ -151,19 +151,6 @@ export async function POST(req) {
       return NextResponse.json({ 
         error: 'Failed to create order. Please try again.' 
       }, { status: 500 });
-    }
-    
-    // Send order confirmation email
-    try {
-      await sendOrderConfirmationEmail(
-        user.email,
-        orderNumber,
-        orderImages.length,
-        totalAmount
-      );
-    } catch (emailError) {
-      // Continue even if email fails
-      console.error('Email sending failed:', emailError.message);
     }
     
     return NextResponse.json({

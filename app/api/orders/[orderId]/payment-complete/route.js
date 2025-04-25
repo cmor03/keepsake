@@ -3,33 +3,7 @@ import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { stripe } from "@/lib/stripe";
 import { POST as transformHandler } from "@/app/api/transform/route";
-
-// Helper to trigger transformation asynchronously
-// Use direct import method instead of fetch for internal API calls
-const triggerTransform = async (orderId, imageId) => {
-  console.log(`Triggering transformation for order ${orderId}, image ${imageId}`);
-  try {
-     // Create a new Request object for the transform API
-     const transformRequest = new Request('https://internal-api/transform', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-       },
-       body: JSON.stringify({ 
-         orderId, 
-         imageId,
-         isSystemCall: true  // Flag to bypass user auth check
-       }),
-     });
-     
-     // Call the handler directly
-     transformHandler(transformRequest).catch(error => {
-       console.error(`Failed to trigger transform for image ${imageId}:`, error);
-     });
-  } catch (error) {
-     console.error(`Failed to trigger transform for image ${imageId}:`, error);
-  }
-};
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 export async function POST(req, context) {
   try {
@@ -44,53 +18,64 @@ export async function POST(req, context) {
       );
     }
 
-    // Verify payment status with Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-    if (paymentIntent.status !== "succeeded") {
-      return NextResponse.json(
-        { error: "Payment has not been completed" },
-        { status: 400 }
-      );
-    }
-
-    // Find and update the order in one step, returning the updated document
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        status: "processing", // Set status to processing, not completed yet
-        paymentStatus: "completed",
-        isPaid: true,
-        paidAt: new Date(),
-        paymentIntentId,
-      },
-      { new: true } // Return the updated document
-    );
-
-    if (!updatedOrder) {
-      return NextResponse.json(
-        { error: "Order not found after update attempt" },
-        { status: 404 }
-      );
+    const order = await Order.findById(orderId);
+    if (!order) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
     
-    console.log(`Order ${orderId} payment confirmed, status set to processing.`);
-
-    // Trigger transformation for each image asynchronously
-    if (updatedOrder.images && updatedOrder.images.length > 0) {
-        console.log(`Starting transform triggers for ${updatedOrder.images.length} images in order ${orderId}...`);
-        updatedOrder.images.forEach(image => {
-            // Only trigger for images that haven't been processed yet
-            if (image.status === 'pending' && image._id) { 
-                triggerTransform(updatedOrder._id.toString(), image._id.toString());
-            } else {
-                console.log(`Skipping trigger for image ${image._id} with status ${image.status}`);
-            }
-        });
+    // Check if already processed by this webhook or client-side upload
+    if (order.isPaid && order.paymentStatus === 'completed') {
+         console.log(`Webhook received for already paid order ${orderId}. Ignoring.`);
+         return NextResponse.json({ success: true, message: `Order payment already confirmed.` });
+    }
+    
+    // Allow processing if status is awaiting_payment OR processing (client might have started upload)
+    if (!['awaiting_payment', 'processing'].includes(order.status)) {
+        console.warn(`Webhook received for order ${orderId} with unexpected status: ${order.status}.`);
+        return NextResponse.json(
+            { error: `Order has unexpected status: ${order.status}` },
+            { status: 400 }
+        );
     }
 
-    // Return success immediately, transformation happens in background
-    return NextResponse.json({ success: true, orderStatus: updatedOrder.status });
+    // Verify payment status with Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (paymentIntent.status !== "succeeded") {
+      // Don't error out, just log. Maybe payment will succeed later?
+      console.warn(`Webhook received for order ${orderId} but PaymentIntent status is ${paymentIntent.status}. No action taken.`);
+      return NextResponse.json({ success: false, message: `Payment not completed (status: ${paymentIntent.status})` });
+    }
+
+    // --- Update Order: Only mark as paid --- 
+    // Do NOT change order.status here - let the upload handler do that.
+    order.paymentStatus = "completed";
+    order.isPaid = true;
+    order.paidAt = new Date();
+    order.paymentIntentId = paymentIntentId;
+    
+    const updatedOrder = await order.save();
+    console.log(`Order ${orderId} marked as paid via webhook.`);
+    // --- End Update --- 
+
+    // --- Send confirmation email (Still OK to do here) --- 
+    try {
+        if (updatedOrder.customerEmail && updatedOrder.orderNumber && updatedOrder.images) {
+            await sendOrderConfirmationEmail(
+                updatedOrder.customerEmail,
+                updatedOrder.orderNumber,
+                updatedOrder.images.length,
+                updatedOrder.totalAmount
+            );
+            console.log(`Order confirmation email sent for order ${orderId}`);
+        } else {
+            console.error(`Cannot send confirmation email for order ${orderId}, missing required data.`);
+        }
+    } catch (emailError) {
+        console.error(`Failed to send confirmation email for order ${orderId}:`, emailError.message);
+    }
+    // --- End Email --- 
+
+    return NextResponse.json({ success: true, orderStatus: updatedOrder.status, paymentStatus: updatedOrder.paymentStatus });
   } catch (error) {
     console.error("Error completing payment:", error);
     return NextResponse.json(

@@ -13,29 +13,49 @@ function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
-  const orderId = searchParams.get('orderId');
+  const [orderId, setOrderId] = useState(searchParams.get('orderId'));
   
   const [email, setEmail] = useState('');
   const [orderImages, setOrderImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
   
   // Get the Stripe context functions
   const { createPaymentIntent, processing, paymentError } = useStripe();
   
-  // Authentication check using Clerk
+  // Check for order and authentication
   useEffect(() => {
     if (!isLoaded) return;
     
-    if (!isSignedIn) {
-      router.replace('/sign-in');
-      return;
+    // Check if we have an orderId in the URL
+    if (!orderId) {
+      // If no orderId in URL, check localStorage for pending order
+      const pendingOrderId = localStorage.getItem('pendingOrderId');
+      if (pendingOrderId) {
+        setOrderId(pendingOrderId);
+        router.replace(`/upload/checkout?orderId=${pendingOrderId}`);
+        // Don't fetch yet as we're redirecting
+        return;
+      } else {
+        // No order ID found anywhere, redirect to upload
+        setError('No order found. Please upload images first.');
+        setTimeout(() => {
+          router.replace('/upload');
+        }, 2000);
+        return;
+      }
     }
     
-    // If authenticated, continue with order fetching
+    // Clear localStorage once we're on the checkout page with an orderId
+    localStorage.removeItem('pendingOrderId');
+    localStorage.removeItem('pendingUploadOrder');
+    
+    // Fetch order details
     fetchOrderAndInitPayment();
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoaded, router, orderId]);
   
   // Function to fix order email if missing
   const fixOrderEmail = async (orderId) => {
@@ -57,6 +77,53 @@ function CheckoutPageContent() {
     } catch (err) {
       console.error('Error fixing order email:', err);
       return null;
+    }
+  };
+  
+  const updateOrderEmail = async (email) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/update-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update order email');
+      }
+      
+      const data = await response.json();
+      return data.order.customerEmail;
+    } catch (err) {
+      console.error('Error updating order email:', err);
+      return null;
+    }
+  };
+  
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !emailInput.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const updatedEmail = await updateOrderEmail(emailInput);
+      if (updatedEmail) {
+        setEmail(updatedEmail);
+        setEmailSubmitted(true);
+        // Re-init payment with updated email
+        fetchOrderAndInitPayment();
+      } else {
+        throw new Error('Failed to update email');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while updating email');
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -84,68 +151,59 @@ function CheckoutPageContent() {
       let orderData = data.order;
       setOrderImages(orderData.images || []);
       
-      // If customerEmail is missing, try to fix it
-      if (!orderData.customerEmail) {
+      if (orderData.customerEmail) {
+        setEmail(orderData.customerEmail);
+        setEmailSubmitted(true);
+      } else if (isSignedIn) {
+        // If authenticated but no email in order, try to fix it
         const fixedEmail = await fixOrderEmail(orderId);
         if (fixedEmail) {
           orderData.customerEmail = fixedEmail;
-        } else {
-          throw new Error('Customer email is missing and could not be fixed');
+          setEmail(fixedEmail);
+          setEmailSubmitted(true);
         }
       }
       
       // Check if component is still mounted
       if (!isMounted) return;
       
-      setEmail(orderData.customerEmail);
       setOrder(orderData);
       
-      // Make sure we have all required fields for payment
-      if (!orderData.id) {
-        throw new Error('Order ID is missing');
-      }
-      
-      if (!orderData.finalAmount && !orderData.totalAmount) {
-        throw new Error('Order amount is missing');
-      }
-      
-      if (!orderData.customerEmail) {
-        throw new Error('Customer email is missing');
-      }
-      
-      try {
-        // Create payment intent with all required fields
-        const paymentData = await createPaymentIntent({
-          orderId: orderData.id,
-          amount: orderData.finalAmount || orderData.totalAmount,
-          customerEmail: orderData.customerEmail,
-          images: orderData.images || [],
-        });
-        
-        // Check if component is still mounted
-        if (!isMounted) return;
-        
-        // Update the order with payment intent data
-        setOrder(prevOrder => ({
-          ...prevOrder,
-          clientSecret: paymentData.clientSecret,
-          customerId: paymentData.customerId,
-        }));
-      } catch (paymentError) {
-        console.error('Payment intent error:', paymentError);
-        if (isMounted) {
-          setError(paymentError.message || 'Error creating payment intent');
+      // For authenticated users or if we already have an email, create payment intent
+      if (emailSubmitted || orderData.customerEmail) {
+        try {
+          // Create payment intent with all required fields
+          const paymentData = await createPaymentIntent({
+            orderId: orderData.id,
+            amount: orderData.finalAmount || orderData.totalAmount,
+            customerEmail: orderData.customerEmail,
+            images: orderData.images || [],
+          });
+          
+          // Check if component is still mounted
+          if (!isMounted) return;
+          
+          // Update the order with payment intent data
+          setOrder(prevOrder => ({
+            ...prevOrder,
+            clientSecret: paymentData.clientSecret,
+            customerId: paymentData.customerId,
+          }));
+        } catch (paymentError) {
+          console.error('Payment intent error:', paymentError);
+          if (isMounted) {
+            setError(paymentError.message || 'Error creating payment intent');
+          }
         }
       }
+      
+      setLoading(false);
     } catch (err) {
       console.error('Checkout error:', err);
       if (isMounted) {
         setError(err.message || 'An error occurred while setting up checkout');
       }
-    } finally {
-      if (isMounted) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
     
     // Cleanup function
@@ -180,6 +238,46 @@ function CheckoutPageContent() {
             >
               Go back
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If no email provided yet and user is not signed in, show email form
+  if (!isSignedIn && !emailSubmitted && !email) {
+    return (
+      <div className="py-12 px-8 sm:px-16">
+        <div className="max-w-md mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-xl font-bold mb-4">Enter Your Email</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Please provide your email address to continue with checkout.
+            </p>
+            
+            <form onSubmit={handleEmailSubmit}>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="your.email@example.com"
+                  required
+                />
+              </div>
+              
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Continue to Checkout
+              </button>
+            </form>
           </div>
         </div>
       </div>

@@ -1,231 +1,254 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@clerk/nextjs';
-import LoadingSpinner from '@/app/components/LoadingSpinner';
-
-const POLLING_INTERVAL = 5000; // Check every 5 seconds
-const MAX_POLLS = 36; // Max 3 minutes (36 * 5 seconds)
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 function TransformPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
-  const orderId = searchParams.get('orderId');
-  const imageId = searchParams.get('imageId');
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [statusMessage, setStatusMessage] = useState("Initializing transformation...");
-  const [transformedImage, setTransformedImage] = useState(null);
-  const [isComplete, setIsComplete] = useState(false);
+  const [originalUrl, setOriginalUrl] = useState('');
+  const [transformedUrl, setTransformedUrl] = useState('');
+  const [transformStatus, setTransformStatus] = useState('processing');
+  const [showContinueButton, setShowContinueButton] = useState(false);
   
-  const pollCount = useRef(0);
-  const intervalId = useRef(null);
-
-  // Authentication check using Clerk
+  // Get parameters from URL
+  const orderId = searchParams.get('orderId');
+  const imageId = searchParams.get('imageId');
+  
+  // Polling mechanism to check transformation status
   useEffect(() => {
     if (!isLoaded) return;
     
-    if (!isSignedIn) {
-      router.replace('/sign-in');
-      return;
-    }
-    
-    // Check for missing parameters
     if (!orderId || !imageId) {
-      setError('Missing order or image information. Please try again.');
+      setError('Missing required parameters');
       setLoading(false);
       return;
     }
-
-    const clearPolling = () => {
-      if (intervalId.current) {
-        clearInterval(intervalId.current);
-        intervalId.current = null;
-      }
-    };
-
-    const checkOrderStatus = async () => {
-      if (pollCount.current >= MAX_POLLS) {
-        setError("Transformation is taking longer than expected. Please check your dashboard later.");
-        clearPolling();
-        setLoading(false);
-        return;
-      }
-      
-      pollCount.current += 1;
-      setStatusMessage(`Checking progress... (Attempt ${pollCount.current})`);
-      
+    
+    let isMounted = true;
+    let pollingInterval;
+    
+    const checkTransformationStatus = async () => {
       try {
-        const response = await fetch(`/api/orders/${orderId}`);
+        const response = await fetch(`/api/transformations/${imageId}`);
         const data = await response.json();
         
         if (!response.ok) {
-          // Keep polling even on temp error, but log it
-          console.warn(`Polling error: ${data.error || 'Failed to fetch order status'}`);
-          return; 
+          throw new Error(data.error || 'Failed to get transformation status');
         }
         
-        const order = data.order;
-        const targetImage = order?.images?.find(img => img.id === imageId);
+        // If component was unmounted, don't update state
+        if (!isMounted) return;
         
-        if (targetImage?.transformedImageUrl) {
-          console.log("Transformation complete! Image found:", targetImage.transformedImageUrl);
-          setTransformedImage(targetImage.transformedImageUrl);
-          setStatusMessage("Transformation Complete!");
-          setIsComplete(true);
-          clearPolling();
-          setLoading(false); // Stop main loading indicator
+        if (data.transformation) {
+          setOriginalUrl(data.transformation.originalImageUrl || '');
           
-          // Redirect to dashboard after a delay
-          setTimeout(() => {
-            router.push(`/dashboard?highlightImage=${imageId}`);
-          }, 3000);
+          if (data.transformation.status === 'completed') {
+            setTransformedUrl(data.transformation.transformedImageUrl || '');
+            setTransformStatus('completed');
+            setShowContinueButton(true);
+            
+            // Clear polling interval
+            if (pollingInterval) {
+              clearInterval(pollingInterval);
+            }
+          } else if (data.transformation.status === 'failed') {
+            setTransformStatus('failed');
+            setError(data.transformation.error || 'Transformation failed');
+            
+            // Clear polling interval
+            if (pollingInterval) {
+              clearInterval(pollingInterval);
+            }
+          } else {
+            setTransformStatus('processing');
+          }
         } else {
-          // Not ready yet, poll will continue
-          setStatusMessage("Processing... Still working on your image.");
+          throw new Error('Transformation not found');
         }
-      } catch (err) {
-        // Network or other fetch error, keep polling for a bit
-        console.error('Polling fetch error:', err);
-        setStatusMessage("Network issue while checking status, will retry...");
-      }
-    };
-
-    // Start the transformation process
-    const initiateTransform = async () => {
-      setStatusMessage("Requesting transformation...");
-      setLoading(true);
-      try {
-        const response = await fetch('/api/transform', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, imageId }),
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to start transformation');
-        }
-
-        // If already transformed, handle completion immediately
-        if (data.image?.transformedImageUrl) {
-           console.log("Image was already transformed:", data.image.transformedImageUrl);
-           setTransformedImage(data.image.transformedImageUrl);
-           setStatusMessage("Transformation Complete!");
-           setIsComplete(true);
-           setLoading(false); 
-           setTimeout(() => {
-             router.push(`/dashboard?highlightImage=${imageId}`);
-           }, 3000);
-        } else {
-          // Transformation started, begin polling
-          setStatusMessage("Transformation in progress... Checking status periodically.");
-          setLoading(true); // Keep loading true while polling
-          pollCount.current = 0; // Reset poll count
-          intervalId.current = setInterval(checkOrderStatus, POLLING_INTERVAL);
-          checkOrderStatus(); // Check immediately once
-        }
-      } catch (err) {
-        console.error('Initiate transform error:', err);
-        setError(err.message || 'Could not start transformation process.');
+        
         setLoading(false);
+      } catch (err) {
+        console.error('Error checking transformation status:', err);
+        
+        // If component was unmounted, don't update state
+        if (!isMounted) return;
+        
+        setError(err.message || 'Something went wrong');
+        setLoading(false);
+        
+        // Clear polling interval
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
       }
     };
-
-    // Continue with transformation process
-    initiateTransform();
-
+    
+    // Check status immediately
+    checkTransformationStatus();
+    
+    // Then poll every 5 seconds
+    pollingInterval = setInterval(checkTransformationStatus, 5000);
+    
     // Cleanup function
     return () => {
-      clearPolling();
+      isMounted = false;
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
-  }, [isLoaded, isSignedIn, router, orderId, imageId]);
+  }, [isLoaded, orderId, imageId]);
   
-  if (error) {
+  const handleContinue = () => {
+    router.push(`/upload/checkout?orderId=${orderId}`);
+  };
+  
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20 pb-10 px-4 flex items-center justify-center">
-        <div className="max-w-lg mx-auto text-center">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl">
-            <h2 className="text-lg font-medium mb-2">Transformation Error</h2>
-            <p>{error}</p>
-          </div>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="mt-8 px-6 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition-colors"
-          >
-            Return to Dashboard
-          </button>
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Loading transformation...</p>
         </div>
       </div>
     );
   }
   
-  if (loading && !isComplete) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex flex-col items-center justify-center">
-        <LoadingSpinner size="lg" />
-        <p className="mt-4 text-gray-600">{statusMessage}</p>
+      <div className="py-12 px-8 sm:px-16">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl">
+            <h2 className="text-xl font-bold mb-2">Error</h2>
+            <p>{error}</p>
+            <button 
+              onClick={() => router.push('/upload')}
+              className="mt-4 text-blue-600 hover:underline"
+            >
+              Go back to upload
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex flex-col items-center justify-center">
-      <div className="max-w-lg w-full mx-auto text-center">
-        <h1 className="text-3xl font-bold mb-8">
-          {isComplete ? "Transformation Complete!" : "Transforming Your Image"}
-        </h1>
-        
-        <div className="mb-12 relative">
-          <div className="w-32 h-32 mx-auto mb-6 relative">
-            {!isComplete ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <LoadingSpinner size="lg" />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
-                <svg className="w-20 h-20 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-            )}
-          </div>
-          
-          <p className="text-lg font-medium mb-4">
-            {statusMessage}
-          </p>
-          
-          {!isComplete && loading && (
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-6">
-               <div 
-                 className="bg-blue-600 h-4 rounded-full animate-pulse"
-                 style={{ width: `100%` }}
-               ></div>
-            </div>
-          )}
-          
-          <p className="text-gray-600">
-            {isComplete 
-              ? "Redirecting to dashboard..."
-              : "This may take a few moments. We'll check the progress periodically."}
-          </p>
+    <div className="py-12 px-8 sm:px-16">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Transforming Image</h1>
+          <div className="text-sm text-gray-500">Step 1b of 3</div>
         </div>
         
-        {isComplete && transformedImage && (
-          <div className="mt-8 p-6 bg-white rounded-xl shadow-sm border border-gray-200 animate-fade-in">
-            <h2 className="text-lg font-medium mb-4">Preview</h2>
-            <div className="relative pt-[100%] bg-gray-50 rounded-lg overflow-hidden">
-              <Image
-                src={transformedImage}
-                alt="Transformed image"
-                fill
-                className="object-contain p-2 animate-fade-in"
-              />
+        {/* Progress Bar */}
+        <div className="pb-12">
+          {/* Step Numbers */}
+          <div className="flex mb-2">
+            <div className="flex-1">
+              <div className="w-6 h-6 bg-black text-white dark:bg-white dark:text-black rounded-full flex items-center justify-center mx-auto">
+                1
+              </div>
             </div>
+            <div className="flex-1">
+              <div className="w-6 h-6 bg-gray-300 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-full flex items-center justify-center mx-auto">
+                2
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="w-6 h-6 bg-gray-300 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-full flex items-center justify-center mx-auto">
+                3
+              </div>
+            </div>
+          </div>
+          
+          {/* Progress Line */}
+          <div className="h-1 flex mt-2">
+            <div className="flex-1 h-full">
+              <div className="h-full w-1/2 bg-black dark:bg-white ml-auto"></div>
+            </div>
+            <div className="flex-1 h-full">
+              <div className="h-full w-full bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+          </div>
+          
+          {/* Step Labels */}
+          <div className="flex text-sm text-center mt-4">
+            <div className="flex-1 font-medium">Select Images</div>
+            <div className="flex-1 text-gray-500">Checkout</div>
+            <div className="flex-1 text-gray-500">Confirmation</div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Original Image */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Original Image</h2>
+            <div className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
+              {originalUrl ? (
+                <Image 
+                  src={originalUrl}
+                  alt="Original image"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">Image not available</p>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Transformed Image */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Transformed Image</h2>
+            <div className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
+              {transformStatus === 'completed' && transformedUrl ? (
+                <Image 
+                  src={transformedUrl}
+                  alt="Transformed image"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-8">
+                  {transformStatus === 'processing' ? (
+                    <>
+                      <LoadingSpinner size="md" />
+                      <p className="text-gray-600 mt-4 text-center">Processing your AI portrait...</p>
+                      <p className="text-gray-400 text-sm mt-2 text-center">
+                        This may take a few minutes.
+                      </p>
+                    </>
+                  ) : transformStatus === 'failed' ? (
+                    <p className="text-red-500 text-center">
+                      Transformation failed. Please try again.
+                    </p>
+                  ) : (
+                    <p className="text-gray-500 text-center">Image not available</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {showContinueButton && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={handleContinue}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Continue to Checkout
+            </button>
           </div>
         )}
       </div>
@@ -236,8 +259,11 @@ function TransformPageContent() {
 export default function TransformPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 pt-16 pb-10 px-4 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Loading transformation...</p>
+        </div>
       </div>
     }>
       <TransformPageContent />

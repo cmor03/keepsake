@@ -205,17 +205,6 @@ export default function PaymentForm({ order, email }) {
           )}
         </button>
       </div>
-      
-      {/* For testing purposes - shows some test card numbers */}
-      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Test Card Numbers:</p>
-        <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-          <li>Success: 4242 4242 4242 4242</li>
-          <li>Require Authentication: 4000 0025 0000 3155</li>
-          <li>Decline: 4000 0000 0000 0002</li>
-          <li>Any expiration date in the future, any 3 digits for CVC</li>
-        </ul>
-      </div>
     </form>
   );
 } 

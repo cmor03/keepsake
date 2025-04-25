@@ -193,13 +193,10 @@ const BeforeAfterCarousel = () => {
 export default function Home() {
   const { isLoaded, isSignedIn } = useAuth();
   
-  // Handle click on Create button based on auth state
+  // Allow all users to go to upload page from homepage
   const handleCreateClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (isLoaded && !isSignedIn) {
-      e.preventDefault();
-      window.location.href = '/sign-in';
-    }
-    // If signed in, let the normal Link navigation happen
+    // No longer need to prevent navigation or redirect to sign-in
+    // User will be prompted to sign in when they try to check out
   };
 
   return (

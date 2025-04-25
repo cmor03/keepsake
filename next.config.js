@@ -5,7 +5,8 @@ const nextConfig = {
     domains: [
       'public.blob.vercel-storage.com',
       'urs4msfgsmzpjesw.public.blob.vercel-storage.com',
-      'urs4msfgsmzpjesw.blob.vercel-storage.com'
+      'urs4msfgsmzpjesw.blob.vercel-storage.com',
+      'www.keepsake.ink'
     ],
   },
   // Disable ESLint during build

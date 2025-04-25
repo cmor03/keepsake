@@ -7,7 +7,8 @@ const nextConfig = {
       'keepsake-three.vercel.app',
       'public.blob.vercel-storage.com',
       'urs4msfgsmzpjesw.public.blob.vercel-storage.com',
-      'urs4msfgsmzpjesw.blob.vercel-storage.com'
+      'urs4msfgsmzpjesw.blob.vercel-storage.com',
+      'www.keepsake.ink'
     ],
   },
   // Add configuration to serve files from the uploads directory

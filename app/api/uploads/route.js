@@ -19,43 +19,38 @@ export async function POST(req) {
   try {
     await dbConnect();
     
-    // Get Clerk auth data instead of JWT token
+    // Get Clerk auth data if available
     const { userId } = await auth();
+    let user = null;
     
-    if (!userId) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
-    // Find or create user in MongoDB
-    let user = await User.findOne({ clerkId: userId });
-    
-    // If user doesn't exist in MongoDB, create a new one with Clerk data
-    if (!user) {
-      console.log('User not found in MongoDB, creating from Clerk data...');
-      // Get the full user profile from Clerk
-      const clerkUser = await currentUser();
+    // Handle authenticated users
+    if (userId) {
+      // Find or create user in MongoDB
+      user = await User.findOne({ clerkId: userId });
       
-      if (!clerkUser) {
-        return NextResponse.json(
-          { error: 'Could not fetch user data from Clerk' },
-          { status: 404 }
-        );
+      // If user doesn't exist in MongoDB, create a new one with Clerk data
+      if (!user) {
+        console.log('User not found in MongoDB, creating from Clerk data...');
+        // Get the full user profile from Clerk
+        const clerkUser = await currentUser();
+        
+        if (clerkUser) {
+          // Extract primary email if available
+          const primaryEmail = clerkUser.emailAddresses.find(
+            email => email.id === clerkUser.primaryEmailAddressId
+          )?.emailAddress;
+          
+          user = await User.create({
+            clerkId: userId,
+            email: primaryEmail || userId, // Use primary email or fallback to Clerk ID
+            name: clerkUser.firstName 
+              ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`
+              : 'Keepsake User'
+          });
+          
+          console.log('Created new user in MongoDB:', user._id);
+        }
       }
-      
-      // Extract primary email if available
-      const primaryEmail = clerkUser.emailAddresses.find(
-        email => email.id === clerkUser.primaryEmailAddressId
-      )?.emailAddress;
-      
-      user = await User.create({
-        clerkId: userId,
-        email: primaryEmail || userId, // Use primary email or fallback to Clerk ID
-        name: clerkUser.firstName 
-          ? `${clerkUser.firstName} ${clerkUser.lastName || ''}`
-          : 'Keepsake User'
-      });
-      
-      console.log('Created new user in MongoDB:', user._id);
     }
     
     // Handle multipart form data
@@ -106,26 +101,37 @@ export async function POST(req) {
     
     // Create a new order
     const orderNumber = generateOrderNumber();
-    const order = await Order.create({
-      user: user._id,
+    
+    // If user is authenticated, associate the order with their account
+    // Otherwise, create an order without a user association
+    const orderData = {
       orderNumber,
       images: orderImages,
       totalAmount,
       status: 'pending',
-      customerEmail: user.email,
-    });
+      customerEmail: user?.email || '', // Empty string if no user
+    };
     
-    // Send order confirmation email
-    try {
-      await sendOrderConfirmationEmail(
-        user.email,
-        orderNumber,
-        orderImages.length,
-        totalAmount
-      );
-    } catch (emailError) {
-      // Continue even if email fails
-      console.error('Email sending failed:', emailError.message);
+    // Only associate with user if authenticated
+    if (user) {
+      orderData.user = user._id;
+    }
+    
+    const order = await Order.create(orderData);
+    
+    // Send order confirmation email if user has email
+    if (user?.email) {
+      try {
+        await sendOrderConfirmationEmail(
+          user.email,
+          orderNumber,
+          orderImages.length,
+          totalAmount
+        );
+      } catch (emailError) {
+        // Continue even if email fails
+        console.error('Email sending failed:', emailError.message);
+      }
     }
     
     return NextResponse.json({
@@ -136,7 +142,7 @@ export async function POST(req) {
         status: order.status,
         imageCount: orderImages.length,
         totalAmount,
-        customerEmail: user.email,
+        customerEmail: user?.email || '',
       },
     });
   } catch (error) {

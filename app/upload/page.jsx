@@ -19,16 +19,25 @@ export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(true);
   const imageUploaderRef = useRef(null);
 
-  // Check authentication using Clerk
+  // Allow both authenticated and non-authenticated users to access this page
   useEffect(() => {
     if (!isLoaded) return;
+    setIsLoading(false);
     
-    if (!isSignedIn) {
-      router.replace('/sign-in');
-    } else {
-      setIsLoading(false);
+    // Check for stored order data from localStorage (for returning users after auth)
+    const storedOrderData = localStorage.getItem('pendingUploadOrder');
+    if (storedOrderData) {
+      try {
+        const orderData = JSON.parse(storedOrderData);
+        setUploadedOrder(orderData);
+        setImageCount(orderData.imageCount || 0);
+        setPrice(orderData.totalAmount || 0);
+      } catch (err) {
+        console.error('Error parsing stored order data:', err);
+        localStorage.removeItem('pendingUploadOrder');
+      }
     }
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoaded]);
 
   // Calculate price per image based on image count
   const getPricePerImage = (count) => {
@@ -57,11 +66,23 @@ export default function UploadPage() {
     setPrice(orderData.totalAmount || 0);
     setIsUploading(false);
     setError(null); // Clear any existing errors
+    
+    // Store the order data in localStorage for retrieval after auth
+    localStorage.setItem('pendingUploadOrder', JSON.stringify(orderData));
   };
 
   const handleProceedToCheckout = async () => {
     // First check if we have an order with uploaded images
     if (uploadedOrder?.id && uploadedOrder.imageCount > 0) {
+      // If user is not signed in, redirect to sign-in page
+      if (!isSignedIn) {
+        // Store the order ID in localStorage before redirecting
+        localStorage.setItem('pendingOrderId', uploadedOrder.id);
+        router.push(`/sign-in?redirect_url=${encodeURIComponent(`/upload/checkout?orderId=${uploadedOrder.id}`)}`);
+        return;
+      }
+      
+      // If signed in, proceed directly to checkout
       router.push(`/upload/checkout?orderId=${uploadedOrder.id}`);
       return;
     }

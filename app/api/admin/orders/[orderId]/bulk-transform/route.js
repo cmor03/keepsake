@@ -3,15 +3,14 @@ import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
 import User from '@/models/User';
 import { auth } from '@clerk/nextjs/server';
+import { POST as transformHandler } from '@/app/api/transform/route';
 
 // Helper to trigger transformation asynchronously
 const triggerTransform = async (orderId, imageId) => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const transformUrl = `${baseUrl}/api/transform`;
-  console.log(`Triggering transformation for order ${orderId}, image ${imageId} at ${transformUrl}`);
+  console.log(`Triggering transformation for order ${orderId}, image ${imageId}`);
   try {
-    // No await here - fire and forget
-    fetch(transformUrl, {
+    // Create a new Request object for the transform API
+    const transformRequest = new Request('https://internal-api/transform', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -21,6 +20,11 @@ const triggerTransform = async (orderId, imageId) => {
         imageId,
         isSystemCall: true  // Flag to bypass user auth check 
       }),
+    });
+    
+    // Call the handler directly
+    transformHandler(transformRequest).catch(error => {
+      console.error(`Failed to trigger transform for image ${imageId}:`, error);
     });
   } catch (error) {
     console.error(`Failed to trigger transform for image ${imageId}:`, error);

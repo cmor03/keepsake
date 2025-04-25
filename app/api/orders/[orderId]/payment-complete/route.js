@@ -2,20 +2,18 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import { stripe } from "@/lib/stripe";
+import { POST as transformHandler } from "@/app/api/transform/route";
 
 // Helper to trigger transformation asynchronously
-// NOTE: In production, ensure NEXT_PUBLIC_APP_URL is set correctly
+// Use direct import method instead of fetch for internal API calls
 const triggerTransform = async (orderId, imageId) => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const transformUrl = `${baseUrl}/api/transform`;
-  console.log(`Triggering transformation for order ${orderId}, image ${imageId} at ${transformUrl}`);
+  console.log(`Triggering transformation for order ${orderId}, image ${imageId}`);
   try {
-     // No await here - fire and forget
-     fetch(transformUrl, {
+     // Create a new Request object for the transform API
+     const transformRequest = new Request('https://internal-api/transform', {
        method: 'POST',
        headers: {
          'Content-Type': 'application/json',
-         // TODO: Add authentication if needed for internal API calls
        },
        body: JSON.stringify({ 
          orderId, 
@@ -23,9 +21,13 @@ const triggerTransform = async (orderId, imageId) => {
          isSystemCall: true  // Flag to bypass user auth check
        }),
      });
+     
+     // Call the handler directly
+     transformHandler(transformRequest).catch(error => {
+       console.error(`Failed to trigger transform for image ${imageId}:`, error);
+     });
   } catch (error) {
      console.error(`Failed to trigger transform for image ${imageId}:`, error);
-     // Optionally: Update image status to failed here?
   }
 };
 

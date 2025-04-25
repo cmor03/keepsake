@@ -24,6 +24,12 @@ export default function UploadPage() {
     if (!isLoaded) return;
     setIsLoading(false);
     
+    // If user is not authenticated, redirect to sign-in
+    if (!isSignedIn) {
+      router.push('/sign-in?redirect_url=/upload');
+      return;
+    }
+    
     // Check for stored order data from localStorage (for returning users after auth)
     const storedOrderData = localStorage.getItem('pendingUploadOrder');
     if (storedOrderData) {
@@ -37,7 +43,7 @@ export default function UploadPage() {
         localStorage.removeItem('pendingUploadOrder');
       }
     }
-  }, [isLoaded]);
+  }, [isLoaded, isSignedIn, router]);
 
   // Calculate price per image based on image count
   const getPricePerImage = (count) => {

@@ -201,12 +201,16 @@ export async function POST(req, context) {
     await order.save();
     
     // Check if all images in the order have been transformed
-    const allImagesTransformed = order.images.every(img => img.transformedImage);
+    const allImagesTransformed = order.images.every(img => 
+      img.status === 'completed' || img.status === 'failed'
+    );
     
-    // If all transformed and status still pending, update to processing
-    if (allImagesTransformed && order.status === 'pending') {
-      order.status = 'processing';
+    // If all transformed, update order status to completed
+    if (allImagesTransformed) {
+      // Set order status to completed when all images are processed
+      order.status = 'completed';
       await order.save();
+      console.log(`All images in order ${orderId} are processed. Order status updated to completed.`);
     }
     
     return NextResponse.json({

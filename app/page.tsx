@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { MouseEvent } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 
 // Refined Carousel component
 const BeforeAfterCarousel = () => {
@@ -192,11 +193,15 @@ const BeforeAfterCarousel = () => {
 
 export default function Home() {
   const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
   
   // Allow all users to go to upload page from homepage
   const handleCreateClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    // No longer need to prevent navigation or redirect to sign-in
-    // User will be prompted to sign in when they try to check out
+    // If not signed in, prevent default navigation and redirect to sign-in
+    if (!isSignedIn) {
+      e.preventDefault();
+      router.push('/sign-in?redirect_url=/upload');
+    }
   };
 
   return (

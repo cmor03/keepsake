@@ -25,6 +25,10 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSystem: {
+      type: Boolean,
+      default: false,
+    },
     name: {
       type: String,
       trim: true,

@@ -47,6 +47,43 @@ async function webStreamToNodeStream(webStream) {
   return nodeStream;
 }
 
+// Helper function to check if all images in an order are completed
+// and update the order status if needed
+async function checkAndUpdateOrderStatus(orderId) {
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      console.error(`Order ${orderId} not found when checking completion status`);
+      return;
+    }
+    
+    // No images to check
+    if (!order.images || order.images.length === 0) {
+      return;
+    }
+    
+    // Check if all images are completed or failed
+    const allImagesProcessed = order.images.every(
+      img => img.status === 'completed' || img.status === 'failed'
+    );
+    
+    if (allImagesProcessed) {
+      console.log(`All images for order ${orderId} are processed. Updating order status to completed.`);
+      
+      // Only update status if it's in processing state
+      if (order.status === 'processing') {
+        order.status = 'completed';
+        await order.save();
+        console.log(`Order ${orderId} status updated to completed.`);
+      } else {
+        console.log(`Order ${orderId} status remains as ${order.status} (not updated).`);
+      }
+    }
+  } catch (error) {
+    console.error(`Error checking/updating order status: ${error.message}`);
+  }
+}
+
 export async function POST(req) {
   try {
     await dbConnect();
@@ -263,6 +300,9 @@ export async function POST(req) {
         imageToTransform.dateTransformed = new Date();
         await order.save();
         
+        // Check if all images in the order are completed and update order status
+        await checkAndUpdateOrderStatus(orderId);
+        
         return NextResponse.json({
           success: true,
           image: {
@@ -300,6 +340,9 @@ export async function POST(req) {
         imageToTransform.status = 'completed'; // Update status
         imageToTransform.dateTransformed = new Date();
         await order.save();
+        
+        // Check if all images in the order are completed and update order status
+        await checkAndUpdateOrderStatus(orderId);
         
         return NextResponse.json({
           success: true,

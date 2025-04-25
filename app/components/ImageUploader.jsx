@@ -131,19 +131,32 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
       const formData = new FormData();
       filesToProcess.forEach(file => {
         formData.append('files', file);
+        console.log(`Adding file to upload: ${file.name}, size: ${(file.size/1024/1024).toFixed(2)}MB, type: ${file.type}`);
       });
       
+      console.log('Sending upload request to API...');
       const response = await fetch('/api/uploads', {
         method: 'POST',
         body: formData,
         signal, // Pass the abort signal
       });
       
-      const data = await response.json();
-      console.log('Upload API response:', data);
+      // Log HTTP status and headers
+      console.log(`Upload response status: ${response.status} ${response.statusText}`);
+      
+      // Parse response JSON
+      let data;
+      try {
+        data = await response.json();
+        console.log('Upload API response:', data);
+      } catch (jsonError) {
+        console.error('Failed to parse response JSON:', jsonError);
+        throw new Error('Invalid response from server');
+      }
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload images');
+        console.error('Upload failed with status:', response.status, data);
+        throw new Error(data.error || data.details || 'Failed to upload images');
       }
       
       // Clean up file previews to avoid memory leaks for files we just uploaded
@@ -153,6 +166,7 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
       setUploadedOrder(data.order);
       
       // Fetch the order details to get the uploaded images
+      console.log('Fetching order details for order ID:', data.order.id);
       const orderResponse = await fetch(`/api/orders/${data.order.id}`);
       const orderData = await orderResponse.json();
       console.log('Order details:', orderData);

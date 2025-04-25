@@ -30,6 +30,12 @@ function CheckoutPageContent() {
   useEffect(() => {
     if (!isLoaded) return;
     
+    // Always verify authentication
+    if (!isSignedIn) {
+      router.replace('/sign-in?redirect_url=/upload/checkout');
+      return;
+    }
+    
     // Check if we have an orderId in the URL
     if (!orderId) {
       // If no orderId in URL, check localStorage for pending order
@@ -55,7 +61,7 @@ function CheckoutPageContent() {
     
     // Fetch order details
     fetchOrderAndInitPayment();
-  }, [isLoaded, router, orderId]);
+  }, [isLoaded, isSignedIn, router, orderId]);
   
   // Function to fix order email if missing
   const fixOrderEmail = async (orderId) => {

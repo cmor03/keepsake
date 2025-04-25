@@ -313,13 +313,12 @@ function ConfirmationPageContent() {
                      </div>
                   )}
 
-                  {/* Fallback/Original - Display if status is missing and no processed image, but original exists */}
-                  {image.status !== IMAGE_STATUS.COMPLETED && image.status !== IMAGE_STATUS.FAILED && image.status !== IMAGE_STATUS.PENDING && image.status !== IMAGE_STATUS.PROCESSING && image.originalImage && (
+                  {/* Fallback/Original - Display if status is unknown and original URL exists */}
+                  {image.status !== IMAGE_STATUS.COMPLETED && image.status !== IMAGE_STATUS.FAILED && image.status !== IMAGE_STATUS.PENDING && image.status !== IMAGE_STATUS.PROCESSING && image.originalImageUrl && (
                      <Image 
-                       src={`/uploads/originals/${image.originalImage}`} // Assuming original is stored locally
+                       src={image.originalImageUrl} // Use direct blob URL
                        alt={image.name || `Original Image ${index + 1}`}
                        fill
-                       style={{ objectFit: 'cover', opacity: 0.5 }} // Indicate it's not the final one
                      />
                   )}
 

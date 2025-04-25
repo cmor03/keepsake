@@ -251,9 +251,9 @@ function CheckoutPageContent() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {orderImages.map((image, index) => (
                   <div key={index} className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative">
-                    {image.originalImage && (
+                    {image.originalImageUrl && (
                       <Image 
-                        src={`/uploads/originals/${image.originalImage}`}
+                        src={image.originalImageUrl}
                         alt={image.name || `Image ${index + 1}`}
                         fill
                         style={{ objectFit: 'cover' }}

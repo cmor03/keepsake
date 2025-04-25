@@ -108,7 +108,7 @@ export default function OrderDetailPage() {
             <p className="text-gray-500 italic">No images available</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {order.images.map((image) => (
+              {order.images.map((image, index) => (
                 <div key={image.id} className="border rounded-lg overflow-hidden">
                   <div className="p-4 border-b">
                     <h3 className="font-medium">{image.name}</h3>
@@ -120,20 +120,19 @@ export default function OrderDetailPage() {
                   <div className="grid grid-cols-2 gap-2 p-4">
                     <div>
                       <p className="text-sm font-medium mb-2">Original</p>
-                      {image.originalImage ? (
-                        <div className="relative h-40 bg-gray-100 rounded">
+                      <div className="aspect-square w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden relative flex items-center justify-center text-gray-400">
+                        {image.originalImageUrl ? (
                           <Image
-                            src={`/api/uploads/originals/${image.originalImage}`}
-                            alt={`Original ${image.name}`}
+                            src={image.originalImageUrl}
+                            alt={image.name || `Original Image ${index + 1}`}
                             fill
-                            className="object-contain"
                           />
-                        </div>
-                      ) : (
-                        <div className="bg-gray-100 h-40 flex items-center justify-center rounded">
-                          <p className="text-gray-400">No image available</p>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="bg-gray-100 h-40 flex items-center justify-center rounded">
+                            <p className="text-gray-400">No image available</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div>

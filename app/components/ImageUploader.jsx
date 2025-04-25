@@ -238,15 +238,25 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
             <h3 className="text-lg font-medium">Uploaded Images ({uploadedFiles.length})</h3>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
             {uploadedFiles.map((image, index) => (
-              <div key={image.id} className="relative group aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                <Image 
-                  src={`/uploads/originals/${image.originalImage}`}
-                  alt={image.name || `Image ${index + 1}`}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
+              <div key={index} className="relative group">
+                <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  {/* Use originalImageUrl if available, else fallback to preview (local blob URL) */}
+                  {image.originalImageUrl || image.preview ? (
+                    <Image
+                      src={image.originalImageUrl || image.preview}
+                      alt={`Preview ${image.file.name}`}
+                      fill
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <svg className="h-8 w-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2v12h8V4H6zm8 12h2a2 2 0 002-2v-2h-2v2zM6 14H4v2a2 2 0 01-2-2v-2h2v2zm10-10V4a2 2 0 00-2-2h-2v2h2v2zM4 6H2a2 2 0 00-2 2v2h2V6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
                 <button 
                   onClick={() => removeUploadedFile(image.id)}
                   className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -277,15 +287,16 @@ const ImageUploader = forwardRef(({ onUploadComplete, hideUploadButton = false }
             )}
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
             {files.map((file, index) => (
-              <div key={index} className="relative group aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
-                <Image 
-                  src={file.preview} 
-                  alt={file.name}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                />
+              <div key={index} className="relative group">
+                <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <Image 
+                    src={file.preview} 
+                    alt={file.name}
+                    fill
+                  />
+                </div>
                 {!uploading && (
                   <button 
                     onClick={() => removeFile(index)}

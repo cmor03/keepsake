@@ -238,13 +238,12 @@ export default function AdminOrderDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                     <div>
                       <p className="text-sm font-medium mb-2">Original</p>
-                      {image.originalImage ? (
-                        <div className="relative h-64 bg-gray-100 rounded">
+                      {image.originalImageUrl ? (
+                        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
                           <Image
-                            src={`/api/uploads/originals/${image.originalImage}`}
+                            src={image.originalImageUrl}
                             alt={`Original ${image.name}`}
                             fill
-                            className="object-contain"
                           />
                         </div>
                       ) : (

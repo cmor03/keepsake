@@ -74,14 +74,14 @@ function DashboardContent() {
           userData.orders.forEach(order => {
             if (order.images && order.images.length > 0) {
               order.images.forEach(image => {
-                if (image.transformedImage) {
+                if (image.transformedImageUrl) {
                   const creation = {
                     id: image._id,
                     name: image.name,
-                    originalImage: image.originalImage,
-                    transformedImage: image.transformedImage,
+                    originalImageUrl: image.originalImageUrl,
+                    transformedImageUrl: image.transformedImageUrl,
                     dateTransformed: image.dateTransformed,
-                    orderId: order.id,
+                    orderId: order._id,
                     orderNumber: order.orderNumber
                   };
                   
@@ -216,13 +216,13 @@ function DashboardContent() {
                   >
                     <div className="relative pt-[100%] bg-gray-50">
                       <Image
-                        src={`/api/uploads/transformed/${creation.transformedImage}`}
+                        src={creation.transformedImageUrl}
                         alt={creation.name || "Coloring page"}
                         fill
                         className={`object-contain p-2 ${isNew ? 'animate-fade-in' : ''}`}
                       />
                       <button
-                        onClick={() => handleDownload(`/api/uploads/transformed/${creation.transformedImage}`, `${creation.name || 'coloring-page'}.png`)}
+                        onClick={() => handleDownload(creation.transformedImageUrl, `${creation.name || 'coloring-page'}.png`)}
                         className="absolute top-2 right-2 bg-white bg-opacity-90 p-2 rounded-full shadow-md hover:bg-opacity-100 transition-all"
                         aria-label="Download"
                       >

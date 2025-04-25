@@ -16,7 +16,7 @@ try {
   } else {
     stripe = new Stripe(apiKey);
   }
-} catch {
+} catch (error) {
   console.error('Failed to initialize Stripe:', error);
 }
 
@@ -151,7 +151,7 @@ export async function POST(request) {
       amount,
       customerEmail: primaryEmail,
     });
-  } catch {
+  } catch (error) {
     console.error('Payment intent creation error:', error);
     
     return NextResponse.json(

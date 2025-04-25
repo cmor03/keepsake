@@ -78,7 +78,7 @@ export async function POST() {
         isAdmin: user.isAdmin,
       }
     });
-  } catch {
+  } catch (error) {
     console.error("Error syncing user data:", error);
     return NextResponse.json(
       { error: 'An error occurred while syncing user data', message: error.message },

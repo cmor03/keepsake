@@ -10,7 +10,7 @@ export default function ClientHeader() {
   
   return (
     <header className="relative">
-      <div className="flex items-center justify-between py-3 px-4 sm:py-4 sm:px-8 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center justify-between py-3 px-4 sm:py-4 sm:px-8 border-b border-gray-200/50 dark:border-gray-800/50 glass-nav">
         <Link href="/" className="flex items-center gap-2">
           <div className="relative w-7 h-7 sm:w-8 sm:h-8">
             <svg viewBox="0 0 24 24" fill="none" className="w-full h-full text-[var(--primary)]">
@@ -46,13 +46,13 @@ export default function ClientHeader() {
             <>
               <Link 
                 href="/sign-in"
-                className="etsy-button-secondary text-sm h-8 sm:h-10 px-3 sm:px-5 py-1 sm:py-2 flex items-center justify-center"
+                className="etsy-glass-secondary text-sm h-8 sm:h-10 px-3 sm:px-5 py-1 sm:py-2 flex items-center justify-center"
               >
                 Sign in
               </Link>
               <Link 
                 href="/sign-up"
-                className="etsy-button-primary px-3 sm:px-5 py-1 sm:py-2 text-sm"
+                className="etsy-glass-primary px-3 sm:px-5 py-1 sm:py-2 text-sm"
               >
                 Register
               </Link>
@@ -60,7 +60,7 @@ export default function ClientHeader() {
           )}
           
           <button 
-            className="md:hidden text-[var(--secondary)]"
+            className="md:hidden text-[var(--secondary)] glass-button rounded-full p-1.5"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -79,18 +79,18 @@ export default function ClientHeader() {
       
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-900 z-50 border-b border-gray-200 dark:border-gray-800 shadow-lg">
+        <div className="md:hidden absolute top-full left-0 right-0 glass-effect z-50 border-b border-gray-200/50 dark:border-gray-800/50 shadow-lg">
           <nav className="flex flex-col py-2">
             <Link 
               href="/how-it-works" 
-              className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-white/30 dark:hover:bg-gray-800/30"
               onClick={() => setIsMenuOpen(false)}
             >
               How It Works
             </Link>
             <Link 
               href="/pricing" 
-              className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-white/30 dark:hover:bg-gray-800/30"
               onClick={() => setIsMenuOpen(false)}
             >
               Pricing
@@ -100,14 +100,14 @@ export default function ClientHeader() {
               <>
                 <Link 
                   href="/dashboard" 
-                  className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-white/30 dark:hover:bg-gray-800/30"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link 
                   href="/upload" 
-                  className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="px-4 py-3 text-sm font-medium text-[var(--secondary)] hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-white/30 dark:hover:bg-gray-800/30"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Create

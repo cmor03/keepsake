@@ -12,6 +12,12 @@
   --gray-medium: #e5e5e5;
   --gray-dark: #757575;
   --success: #2e7d32;
+  
+  /* Glass morphism variables */
+  --glass-background: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --glass-blur: 10px;
 }
 
 @theme inline {
@@ -38,6 +44,11 @@
     --gray-light: #2a2a2a;
     --gray-medium: #3d3d3d;
     --gray-dark: #b0b0b0;
+    
+    /* Glass morphism variables for dark mode */
+    --glass-background: rgba(35, 35, 35, 0.65);
+    --glass-border: rgba(40, 40, 40, 0.18);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -77,6 +88,52 @@ body {
   animation: glow 2s infinite;
 }
 
+/* Vision OS Glass morphism styles */
+.glass-effect {
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 10px 40px 0 rgba(var(--primary), 0.1);
+  transform: translateY(-3px);
+}
+
+.glass-button {
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.2s ease;
+}
+
+.glass-button:hover {
+  background: rgba(var(--primary), 0.1);
+  box-shadow: 0 10px 20px rgba(var(--primary), 0.2);
+}
+
+.glass-nav {
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
 /* Etsy-inspired button styles */
 .etsy-button-primary {
   background-color: var(--primary);
@@ -103,6 +160,41 @@ body {
   background-color: var(--gray-light);
 }
 
+/* Glass button variants with Etsy styling */
+.etsy-glass-primary {
+  background: rgba(241, 100, 30, 0.7);
+  color: white;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(241, 100, 30, 0.2);
+  border-radius: 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(241, 100, 30, 0.2);
+  transition: all 0.3s ease;
+}
+
+.etsy-glass-primary:hover {
+  background: rgba(216, 78, 22, 0.8);
+  box-shadow: 0 6px 20px rgba(241, 100, 30, 0.3);
+}
+
+.etsy-glass-secondary {
+  background: var(--glass-background);
+  color: var(--secondary);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  font-weight: 600;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s ease;
+}
+
+.etsy-glass-secondary:hover {
+  background: rgba(245, 245, 245, 0.8);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+}
+
 /* Dark mode overrides */
 .dark .etsy-button-secondary {
   background-color: var(--gray-light);
@@ -112,4 +204,36 @@ body {
 
 .dark .etsy-button-secondary:hover {
   background-color: var(--gray-medium);
+}
+
+.dark .etsy-glass-primary {
+  background: rgba(255, 117, 66, 0.7);
+  border: 1px solid rgba(255, 117, 66, 0.2);
+  box-shadow: 0 4px 16px rgba(255, 117, 66, 0.15);
+}
+
+.dark .etsy-glass-primary:hover {
+  background: rgba(241, 100, 30, 0.8);
+  box-shadow: 0 6px 20px rgba(255, 117, 66, 0.2);
+}
+
+.dark .etsy-glass-secondary {
+  background: rgba(42, 42, 42, 0.7);
+  border: 1px solid rgba(61, 61, 61, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.dark .etsy-glass-secondary:hover {
+  background: rgba(61, 61, 61, 0.8);
+}
+
+/* Subtle background gradient */
+.vision-bg {
+  background-image: radial-gradient(circle at top right, rgba(241, 100, 30, 0.05), transparent 60%), 
+                    radial-gradient(circle at bottom left, rgba(241, 100, 30, 0.03), transparent 40%);
+}
+
+.dark .vision-bg {
+  background-image: radial-gradient(circle at top right, rgba(255, 117, 66, 0.05), transparent 60%), 
+                    radial-gradient(circle at bottom left, rgba(255, 117, 66, 0.03), transparent 40%);
 }

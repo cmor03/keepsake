@@ -14,7 +14,7 @@ const OrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'completed'],
+      enum: ['pending', 'awaiting_payment', 'processing', 'completed', 'failed'],
       default: 'pending',
     },
     images: [
@@ -25,7 +25,7 @@ const OrderSchema = new mongoose.Schema(
         },
         originalImageUrl: { // ADDED: URL for original blob
           type: String,
-          required: true,
+          // required: true, // REMOVED: This must be optional now
         },
         transformedImage: {
           type: String,
@@ -71,7 +71,7 @@ const OrderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'processing', 'completed', 'failed'],
+      enum: ['pending', 'awaiting_payment', 'processing', 'completed', 'failed'],
       default: 'pending',
     },
     customerEmail: {

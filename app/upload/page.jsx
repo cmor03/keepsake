@@ -70,11 +70,11 @@ export default function UploadPage() {
   }, [isLoaded, isSignedIn, router]);
 
   const getPricePerImage = (count) => {
-    if (count >= 50) return 3.75;
-    if (count >= 25) return 4.00;
-    if (count >= 10) return 4.25;
-    if (count >= 5) return 4.50;
-    return 5.00;
+    if (count >= 50) return 1.13;
+    if (count >= 25) return 1.20;
+    if (count >= 10) return 1.28;
+    if (count >= 5) return 1.35;
+    return 1.50;
   };
 
   const getDiscountPercentage = (count) => {
@@ -245,7 +245,7 @@ export default function UploadPage() {
           {/* ... Discount Info ... */} 
           {imageCount > 0 && displayDiscountPercentage > 0 && (
               <p className="mt-2 text-sm text-green-600 font-medium">
-                You're saving ${((5.00 - displayPricePerImage) * imageCount).toFixed(2)} with your current discount!
+                You're saving ${((1.50 - displayPricePerImage) * imageCount).toFixed(2)} with your current discount!
               </p>
             )}
           {/* --- Processing State Message (Simplified) --- */}

@@ -1,6 +1,10 @@
 import React from "react";
 import Link from "next/link";
 
+const volumeDiscounts = [
+  { quantity: "1+", discount: "Standard Rate", price: "$1.50" },
+];
+
 export default function PricingPage() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -27,7 +31,7 @@ export default function PricingPage() {
                   Each image is individually hand-crafted by our professional artists, maintaining the perfect balance of detail and simplicity for an engaging coloring experience.
                 </p>
                 <div className="flex items-baseline">
-                  <span className="text-5xl font-bold">$5</span>
+                  <span className="text-5xl font-bold">$1.50</span>
                   <span className="text-xl text-gray-500 ml-2">per image</span>
                 </div>
               </div>
@@ -103,20 +107,33 @@ export default function PricingPage() {
             <div className="mt-16">
               <h2 className="text-2xl font-bold mb-8 text-center">Volume Discounts</h2>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {[
-                  { quantity: "5-9", discount: "10%", price: "$4.50" },
-                  { quantity: "10-24", discount: "15%", price: "$4.25" },
-                  { quantity: "25-49", discount: "20%", price: "$4.00" },
-                  { quantity: "50+", discount: "25%", price: "$3.75" }
-                ].map((tier, i) => (
-                  <div key={i} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 p-8 text-center">
-                    <h3 className="font-bold text-lg">{tier.quantity} Images</h3>
-                    <div className="text-3xl font-bold my-4">{tier.discount} <span className="text-sm text-gray-500">off</span></div>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{tier.price} per image</p>
-                    <p className="text-sm text-gray-500">Savings applied automatically</p>
+              <div className="mt-8 flow-root">
+                <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                  <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                    <table className="min-w-full divide-y divide-gray-300">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">
+                            Quantity
+                          </th>
+                          <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                            Price Per Image
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {volumeDiscounts.map((discount) => (
+                          <tr key={discount.quantity}>
+                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                              {discount.quantity}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{discount.price}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
             
